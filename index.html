@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UnlockWord</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --primary: #4F46E5; --secondary: #7C3AED; --bg: #F3F4F6;
+    --card: #FFFFFF; --text: #1F2937; --muted: #6B7280; --green: #10B981;
+  }
+  * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+  body { margin: 0; background: var(--bg); color: var(--text); padding-bottom: 80px; }
+  header {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    padding: 16px 20px; color: white; display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; cursor: pointer;}
+  .logo span { font-size: 24px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+  .logo div h1 { margin: 0; font-size: 18px; font-weight: 800; }
+  .logo div small { font-size: 11px; opacity: 0.9; }
+  
+  main { padding: 20px; max-width: 600px; margin: 0 auto; }
+  .card {
+    background: var(--card); border-radius: 16px; padding: 20px; margin-bottom: 16px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.04);
+  }
+  .btn {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white; border: none; padding: 14px; border-radius: 12px; width: 100%;
+    font-size: 16px; font-weight: bold; cursor: pointer; transition: transform 0.2s;
+    box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn.success { background: linear-gradient(135deg, #10B981, #059669); box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2); }
+  
+  input, select, textarea {
+    width: 100%; padding: 12px 14px; border: 2px solid #E5E7EB; border-radius: 10px;
+    margin-bottom: 12px; font-size: 15px; outline: none; transition: 0.2s;
+  }
+  input:focus, textarea:focus { border-color: var(--primary); }
+  
+  .tabbar {
+    position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex;
+    justify-content: space-around; padding: 10px 0; box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+  }
+  .tab-btn { background: none; border: none; color: var(--muted); font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .tab-btn.active { color: var(--primary); font-weight: bold; }
+  .tab-btn.active span.icon { transform: scale(1.2); }
+  .icon { font-size: 22px; transition: 0.2s; }
+  
+  .hidden { display: none !important; }
+  .payment-box { background: #FFFBEB; border: 1px solid #FDE68A; padding: 15px; border-radius: 12px; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo" onclick="goTo('home')">
+    <span>🔓📖</span>
+    <div>
+      <h1>UnlockWord</h1>
+      <small>Passive → Active</small>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- HOME SAHIFASI -->
+  <section id="tab-home">
+    <div class="card">
+      <div style="color:var(--muted); margin-bottom:5px;">Xush kelibsiz 👋</div>
+      <div style="font-size:24px; font-weight:900;" id="uname">Foydalanuvchi</div>
+    </div>
+    
+    <div class="card">
+      <h3 style="margin-top:0;">💎 Obuna va Kreditlar</h3>
+      <p style="color:var(--muted)">Sizning hisobingizda: <b style="color:var(--primary); font-size:20px;" id="ucredits">0</b> ta so'z bor.</p>
+      <button class="btn success" onclick="buyWords()">🛒 So'z sotib olish</button>
+      
+      <div id="pay-box" class="hidden payment-box">
+        <div style="font-weight:bold; color:#D97706; margin-bottom:5px;">⚠️ Diqqat!</div>
+        To'lov summasi: <b style="color:#DC2626; font-size:20px;" id="pay-amt"></b> so'm.<br><br>
+        5 daqiqa ichida Telegram orqali <b>@humocardbot</b> yoki <b>@cardxabarbot</b> dagi shu summali chekni botimizga Forward (uzating) qiling! Tizim avtomatik tasdiqlaydi.
+      </div>
+    </div>
+  </section>
+
+  <!-- PRACTICE SAHIFASI -->
+  <section id="tab-practice" class="hidden">
+    <div class="card">
+      <h3 style="margin-top:0;">🎯 Qaysi darajalarni yodlaymiz?</h3>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+        <label><input type="checkbox" value="A1"> A1</label>
+        <label><input type="checkbox" value="A2"> A2</label>
+        <label><input type="checkbox" value="B1"> B1</label>
+        <label><input type="checkbox" value="B2"> B2</label>
+        <label><input type="checkbox" value="C1"> C1</label>
+      </div>
+      <h3 style="margin-top:20px;">📌 Nechta so'z?</h3>
+      <input type="number" id="wcount" value="50" min="5">
+      <button class="btn" style="margin-top:10px;" onclick="alert('Yodlash boshlandi!')">🚀 Boshlash</button>
+    </div>
+    <div class="card hidden" id="practice-learn-view">
+      <textarea id="learn-sentence" rows="3" placeholder="Shu so'zni ishlatib inglizcha gap tuzing..."></textarea>
+      <button class="btn success block" id="t-check-btn" onclick="submitSentence()">✅ Tekshirish</button>
+    </div>
+  </section>
+  
+  <section id="tab-status" class="hidden">
+    <div class="card">
+      <h3>🏆 Top Foydalanuvchilar</h3>
+      <p class="muted">Hali reyting shakllanmadi.</p>
+    </div>
+  </section>
+</main>
+
+<nav class="tabbar">
+  <button class="tab-btn active" data-tab="home" onclick="goTo('home')">
+    <span class="icon">🏠</span><span>Home</span>
+  </button>
+  <button class="tab-btn" data-tab="practice" onclick="goTo('practice')">
+    <span class="icon">📝</span><span>Practice</span>
+  </button>
+  <button class="tab-btn" data-tab="status" onclick="goTo('status')">
+    <span class="icon">👑</span><span>Status</span>
+  </button>
+</nav>
+
+<script>
+  let tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 12345;
+  const API = "http://127.0.0.1:8000";
+
+  function goTo(tab) {
+    document.querySelectorAll("main>section").forEach(s => s.classList.add("hidden"));
+    document.getElementById("tab-" + tab).classList.remove("hidden");
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add("active");
+  }
+
+  async function buyWords() {
+    try {
+      const res = await fetch(`${API}/api/payment/generate?telegram_id=${tgUser}`, {method: "POST"});
+      const data = await res.json();
+      document.getElementById("pay-amt").innerText = data.amount;
+      document.getElementById("pay-box").classList.remove("hidden");
+    } catch(e) {
+      alert("Xatolik! Internet yoki Serverni tekshiring.");
+    }
+  }
+</script>
+</body>
+</html>
