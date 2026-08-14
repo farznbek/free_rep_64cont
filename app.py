@@ -15,7 +15,7 @@ from pydantic import BaseModel
 CONFIG = {
     "TELEGRAM_BOT_TOKEN": "8779433775:AAFZgkrQjY2DHh9V4haS0TcIzsnRirE4Uug",
     "ADMIN_TELEGRAM_ID": 8613094318, # O'zingizning ID raqamingizni yozing
-    "WEBAPP_DOMAIN": "https://your-domain.com",
+    "WEBAPP_DOMAIN": "t.me/UnlockWordbot/apps",
     "GROQ_API_KEY": "GROQ_KEY_SHU_YERGA",
     "GROQ_MODEL": "llama-3.3-70b-versatile",
     "DB_PATH": "unlockword.db",
