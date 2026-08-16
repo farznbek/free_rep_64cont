@@ -46,6 +46,7 @@ DEFAULT_SETTINGS = {
     "webapp_domain": "", "backend_domain": "",
     "groq_api_key": "", "groq_model": "llama-3.3-70b-versatile",
     "price_per_1000": "2500", "min_credits_purchase": "100", "main_channel": "", "logo_url": "",
+    "icon_home": "", "icon_search": "", "icon_practice": "", "icon_new": "", "icon_profile": "",
     "start_message_uz": "UnlockWord'ni ochish uchun tugmani bosing:",
     "start_message_ru": "Нажмите кнопку, чтобы открыть UnlockWord:",
     "start_message_en": "Tap the button to open UnlockWord:",
@@ -53,6 +54,7 @@ DEFAULT_SETTINGS = {
     "sentence_limits": json.dumps({lvl: {"min": 3, "max": 15} for lvl in ["A1", "A2", "B1", "B2", "C1", "C2"]}),
     "bg_color": "", "help_admin": "",
     "auto_ai_check_suggestions": "0",
+    "enable_suggestion_reward": "1",
     "suggestion_reward_amount": "50",
     "referral_bonus": "50",
     "file_parse_price": "1", "file_word_price": "1",
@@ -66,7 +68,7 @@ def init_db():
 
     CREATE TABLE IF NOT EXISTS words (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        word TEXT NOT NULL, base_level TEXT, frequency INTEGER DEFAULT 0,
+        word TEXT NOT NULL, pronunciation TEXT, base_level TEXT, frequency INTEGER DEFAULT 0,
         status TEXT DEFAULT 'active', suggested_by INTEGER
     );
     CREATE TABLE IF NOT EXISTS meanings (
@@ -520,6 +522,9 @@ def referral_info(telegram_id: int):
     return {"display_id": seq_id(u["id"]), "invited_count": count, "earned_credits": earned,
             "bonus_per_invite": int(get_setting("referral_bonus", "50"))}
 
+def fallback_pdf_extract(raw: bytes):
+    return " ".join(re.findall(rb'[a-zA-Z]{2,}', raw)).decode('ascii', errors='ignore')
+
 def _extract_text_from_file(filename: str, raw: bytes) -> str:
     name = (filename or "").lower()
     if name.endswith(".txt"):
@@ -530,8 +535,7 @@ def _extract_text_from_file(filename: str, raw: bytes) -> str:
             reader = PdfReader(io.BytesIO(raw))
             return "\n".join((p.extract_text() or "") for p in reader.pages)
         except Exception:
-            # Fallback agar pypdf topilmasa yoki xato bersa (Fayk o'rniga ishonchli fallback)
-            text_fallback = " ".join(re.findall(rb'[a-zA-Z]{2,}', raw)).decode('ascii', errors='ignore')
+            text_fallback = fallback_pdf_extract(raw)
             if text_fallback: return text_fallback
             raise HTTPException(400, "PDF o'qishda xatolik yuz berdi.")
     if name.endswith(".docx"):
@@ -700,7 +704,7 @@ def suggest_word(body: SuggestWordIn):
     if get_setting("auto_ai_check_suggestions") == "1":
         try:
             check = call_groq_json(
-                "You review a submitted English vocabulary entry. Reply ONLY JSON: {\"looks_valid\": bool, \"note\": str}",
+                'Review vocabulary entry. Reply JSON: {"looks_valid": bool, "note": str}',
                 f"Word: {body.word}\nTranslation: {body.translation}\nDescription: {body.description}"
             )
             if check.get("looks_valid"):
@@ -1016,6 +1020,11 @@ def generate_unique_amount(base: int) -> int:
         amount += 1
     return amount
 
+def parse_uzs_amount_to_int(raw: str) -> int:
+    int_part = raw.split(",")[0]
+    digits = "".join(ch for ch in int_part if ch.isdigit())
+    return int(digits) if digits else 0
+
 def _approve_payment_row(p, source="auto"):
     conn = db()
     fresh = conn.execute("SELECT * FROM pending_payments WHERE id=?", (p["id"],)).fetchone()
@@ -1033,6 +1042,47 @@ def _approve_payment_row(p, source="auto"):
         telegram_send_message(urow["telegram_id"], msg)
         add_notification(fresh["user_id"], msg)
     return True
+
+def auto_confirm_payment_by_amount(amount: int, source="auto"):
+    conn = db()
+    cutoff = (datetime.utcnow() - timedelta(minutes=5)).isoformat()
+    p = conn.execute(
+        "SELECT * FROM pending_payments WHERE expected_amount=? "
+        "AND status IN ('awaiting_amount','awaiting_confirm') AND created_at >= ? "
+        "ORDER BY created_at ASC LIMIT 1",
+        (amount, cutoff),
+    ).fetchone()
+    conn.close()
+    if not p:
+        return None
+    ok = _approve_payment_row(p, source=source)
+    if not ok:
+        return None
+    return {"payment_id": p["id"], "user_id": p["user_id"], "credits": p["credits_to_add"],
+            "display_id": seq_id(p["user_id"])}
+
+class BankNotifyIn(BaseModel):
+    amount: Optional[int] = None
+    raw_text: Optional[str] = None
+
+@app.post("/api/payment/bank-notify")
+def bank_notify(body: BankNotifyIn):
+    amount = body.amount
+    if amount is None and body.raw_text:
+        amount = parse_uzs_amount_to_int(body.raw_text)
+    if not amount or amount <= 0:
+        raise HTTPException(400, "Summani aniqlab bo'lmadi.")
+    res = auto_confirm_payment_by_amount(amount, source="auto")
+    if not res:
+        return {"status": "no_match", "amount": amount,
+                "message": f"{amount} so'mga mos kutilayotgan to'lov topilmadi (yoki muddati o'tgan)."}
+    telegram_send_message(
+        ADMIN_ID,
+        f"✅ To'lov avtomatik aniqlandi va tasdiqlandi!\n\nFoydalanuvchi: {res['display_id']}\n"
+        f"Summa: {amount} so'm · Kredit: {res['credits']}",
+    )
+    return {"status": "approved", "amount": amount, "credits": res["credits"], "user": res["display_id"]}
+
 
 @app.post("/api/payment/generate")
 def generate_payment(telegram_id: int, credits: int = 1000):
@@ -1087,6 +1137,660 @@ def mark_paid(payment_id: int):
         ]]},
     )
     return {"status": "sent_to_admin"}
+
+def expire_old_payments_loop():
+    while True:
+        try:
+            conn = db()
+            cutoff = (datetime.utcnow() - timedelta(minutes=5)).isoformat()
+            conn.execute(
+                "UPDATE pending_payments SET status='expired' WHERE status IN ('awaiting_amount','awaiting_confirm') AND created_at < ?",
+                (cutoff,),
+            )
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
+        time.sleep(60)
+
+# ----------------- TELEGRAM BOT LOGIC (100% RESTORED) -----------------
+
+def webapp_url_for_bot():
+    domain = get_setting("webapp_domain").strip()
+    return domain or None
+
+def send_start_message(chat_id, lang="uz"):
+    url = webapp_url_for_bot()
+    if not url:
+        telegram_send_message(chat_id, "⚠️ Bot hali to'liq sozlanmagan. Admin tez orada tugatadi.")
+        return
+    ok, missing = check_user_subscription(chat_id)
+    if not ok:
+        texts = {"uz": "Davom etish uchun quyidagi kanallarga obuna bo'ling:",
+                 "ru": "Чтобы продолжить, подпишитесь на каналы ниже:",
+                 "en": "Please subscribe to the channels below to continue:"}
+        telegram_send_message(chat_id, texts.get(lang, texts["uz"]), subscription_keyboard(missing, lang))
+        return
+    msg = get_setting(f"start_message_{lang}", get_setting("start_message_uz"))
+    telegram_send_message(chat_id, msg, {"inline_keyboard": [[{"text": "🚀 UnlockWord", "web_app": {"url": url}}]]})
+
+def send_lang_menu(chat_id, first_time=False):
+    prefix = "firstlang_" if first_time else "setlang_"
+    telegram_send_message(chat_id, "Tilni tanlang / Выберите язык / Choose language:", {"inline_keyboard": [
+        [{"text": "🇺🇿 O'zbek", "callback_data": f"{prefix}uz"}],
+        [{"text": "🇷🇺 Русский", "callback_data": f"{prefix}ru"}],
+        [{"text": "🇬🇧 English", "callback_data": f"{prefix}en"}],
+    ]})
+
+def send_lang2_menu(chat_id):
+    telegram_send_message(chat_id, "So'zlar tarjimasini qaysi tilda ko'rmoqchisiz?", {"inline_keyboard": [
+        [{"text": "🇺🇿 O'zbek", "callback_data": "setlang2_uz"}],
+        [{"text": "🇷🇺 Русский", "callback_data": "setlang2_ru"}],
+    ]})
+
+def admin_main_menu():
+    return {"inline_keyboard": [
+        [{"text": "📢 Kanallar", "callback_data": "adm_channels"}, {"text": "👥 Foydalanuvchilar", "callback_data": "adm_users"}],
+        [{"text": "💳 To'lovlar", "callback_data": "adm_payments"}, {"text": "🆕 So'z takliflari", "callback_data": "adm_pendingwords"}],
+        [{"text": "✏️ Gap chegarasi", "callback_data": "adm_sentlimits"}, {"text": "💬 Start xabari", "callback_data": "adm_startmsg"}],
+        [{"text": "🗑 So'z o'chirish", "callback_data": "adm_delword"}],
+        [{"text": "⚙️ Sozlamalar", "callback_data": "adm_settings"}],
+    ]}
+
+def clear_admin_state(chat_id):
+    if chat_id in admin_state:
+        del admin_state[chat_id]
+
+def handle_admin_command(chat_id, text):
+    if text in ("/admin", "/start"):
+        clear_admin_state(chat_id)
+        if text == "/admin":
+            telegram_send_message(chat_id, "🔧 Admin panel", admin_main_menu())
+            return True
+        return False
+
+    state = admin_state.get(chat_id)
+    if not state:
+        return False
+    action = state.get("action")
+
+    if action == "await_ticket_reply":
+        reply = text.strip()
+        ticket_id = state.get("ticket_id")
+        conn = db()
+        ticket = conn.execute("SELECT * FROM tickets WHERE id=?", (ticket_id,)).fetchone()
+        if not ticket:
+            conn.close()
+            clear_admin_state(chat_id)
+            telegram_send_message(chat_id, "❌ Murojaat topilmadi.", admin_main_menu())
+            return True
+        conn.execute("UPDATE tickets SET admin_reply=?, status='answered', replied_at=? WHERE id=?",
+                     (reply, now_iso(), ticket_id))
+        conn.commit()
+        target = conn.execute("SELECT telegram_id FROM users WHERE id=?", (ticket["user_id"],)).fetchone()
+        conn.close()
+        clear_admin_state(chat_id)
+        if target:
+            msg = f"📩 Admin javobi (murojaat #{ticket_id}):\n\n{reply}"
+            telegram_send_message(target["telegram_id"], msg)
+            add_notification(ticket["user_id"], msg)
+        telegram_send_message(chat_id, "✅ Javob foydalanuvchiga yuborildi.", admin_main_menu())
+        return True
+
+    if action == "await_referral_bonus":
+        try:
+            int(text.strip())
+        except ValueError:
+            telegram_send_message(chat_id, "Faqat raqam yuboring.")
+            return True
+        set_setting("referral_bonus", text.strip())
+        clear_admin_state(chat_id)
+        telegram_send_message(chat_id, "✅ Referral bonusi yangilandi.", admin_main_menu())
+        return True
+
+    if action == "await_file_parse_price":
+        set_setting("file_parse_price", text.strip())
+        clear_admin_state(chat_id)
+        telegram_send_message(chat_id, "✅ Fayl tahlili narxi yangilandi.", admin_main_menu())
+        return True
+
+    if action == "await_file_word_price":
+        set_setting("file_word_price", text.strip())
+        clear_admin_state(chat_id)
+        telegram_send_message(chat_id, "✅ Har bir so'z narxi yangilandi.", admin_main_menu())
+        return True
+
+    simple_setters = {
+        "await_channel_remove": ("DELETE FROM channels WHERE id=?", lambda t: (t.strip(),)),
+        "await_ban": ("UPDATE users SET is_banned=1 WHERE telegram_id=?", lambda t: (int(t.strip()),)),
+        "await_unban": ("UPDATE users SET is_banned=0 WHERE telegram_id=?", lambda t: (int(t.strip()),)),
+    }
+    if action in simple_setters:
+        sql, args_fn = simple_setters[action]
+        try:
+            conn = db()
+            conn.execute(sql, args_fn(text))
+            conn.commit()
+            conn.close()
+            clear_admin_state(chat_id)
+            telegram_send_message(chat_id, "✅ Bajarildi.", admin_main_menu())
+        except Exception:
+            telegram_send_message(chat_id, "❌ Noto'g'ri format, qaytadan urining.")
+        return True
+
+    if action == "await_public_ref":
+        ref = text.strip()
+        if not ref.startswith("@"):
+            telegram_send_message(chat_id, "Kanal username @ bilan boshlanishi kerak. Masalan: @mychannel")
+            return True
+        conn = db()
+        conn.execute("INSERT INTO channels (chat_ref, kind, title, invite_link, created_at) VALUES (?,?,?,?,?)",
+                     (ref, "public", ref, "", now_iso()))
+        conn.commit()
+        conn.close()
+        clear_admin_state(chat_id)
+        telegram_send_message(chat_id, f"✅ Ommaviy kanal qo'shildi: {ref}", admin_main_menu())
+        return True
+
+    if action == "await_private_id":
+        ref = text.strip()
+        if not (ref.startswith("-100") and ref[1:].lstrip("-").isdigit()):
+            telegram_send_message(chat_id, "Kanal ID -100 bilan boshlanadigan raqam bo'lishi kerak. Masalan: -1001234567890")
+            return True
+        admin_state[chat_id] = {"action": "await_private_link", "chat_ref": ref}
+        telegram_send_message(chat_id, "Endi shu kanalning taklif havolasini yuboring (masalan https://t.me/+AbCdEfGh):")
+        return True
+
+    if action == "await_private_link":
+        link = text.strip()
+        ref = state.get("chat_ref")
+        conn = db()
+        conn.execute("INSERT INTO channels (chat_ref, kind, title, invite_link, created_at) VALUES (?,?,?,?,?)",
+                     (ref, "private_request", ref, link, now_iso()))
+        conn.commit()
+        conn.close()
+        clear_admin_state(chat_id)
+        telegram_send_message(chat_id, f"✅ Maxfiy (so'rov) kanal qo'shildi: {ref}", admin_main_menu())
+        return True
+
+    if action == "await_optional_ref":
+        ref = text.strip()
+        link = ref if ref.startswith("http") else ""
+        conn = db()
+        conn.execute("INSERT INTO channels (chat_ref, kind, title, invite_link, created_at) VALUES (?,?,?,?,?)",
+                     (ref, "optional", ref, link, now_iso()))
+        conn.commit()
+        conn.close()
+        clear_admin_state(chat_id)
+        telegram_send_message(chat_id, f"✅ Ixtiyoriy kanal/havola qo'shildi: {ref}", admin_main_menu())
+        return True
+
+    if action == "await_price":
+        set_setting("price_per_1000", text.strip())
+        clear_admin_state(chat_id)
+        telegram_send_message(chat_id, "✅ Narx yangilandi.", admin_main_menu())
+        return True
+
+    if action == "await_min_credits":
+        try:
+            int(text.strip())
+        except ValueError:
+            telegram_send_message(chat_id, "Faqat raqam yuboring.")
+            return True
+        set_setting("min_credits_purchase", text.strip())
+        clear_admin_state(chat_id)
+        telegram_send_message(chat_id, "✅ Minimal kredit yangilandi.", admin_main_menu())
+        return True
+
+    if action == "await_mainchannel":
+        set_setting("main_channel", text.strip())
+        clear_admin_state(chat_id)
+        telegram_send_message(chat_id, "✅ Asosiy kanal saqlandi.", admin_main_menu())
+        return True
+
+    if action in ("await_webapp_domain", "await_backend_domain", "await_groq_key", "await_logo_url",
+                  "await_card_number", "await_bg_color", "await_help_admin",
+                  "await_bot_emoji"):
+        key_map = {
+            "await_webapp_domain": "webapp_domain", "await_backend_domain": "backend_domain",
+            "await_groq_key": "groq_api_key", "await_logo_url": "logo_url",
+            "await_card_number": "payment_card", "await_bg_color": "bg_color",
+            "await_help_admin": "help_admin",
+            "await_bot_emoji": "bot_message_emoji",
+        }
+        set_setting(key_map[action], text.strip())
+        clear_admin_state(chat_id)
+        telegram_send_message(chat_id, "✅ Saqlandi.", admin_main_menu())
+        return True
+
+    if action == "await_delete_word":
+        query = text.strip()
+        conn = db()
+        if query.isdigit():
+            w = conn.execute("SELECT * FROM words WHERE id=?", (int(query),)).fetchone()
+        else:
+            w = conn.execute("SELECT * FROM words WHERE word=?", (query.lower(),)).fetchone()
+        if not w:
+            conn.close()
+            telegram_send_message(chat_id, "❌ Bunday so'z topilmadi. ID yoki so'zning o'zini aniq yuboring.")
+            return True
+        conn.execute("DELETE FROM words WHERE id=?", (w["id"],))
+        conn.execute("DELETE FROM meanings WHERE word_id=?", (w["id"],))
+        conn.commit()
+        conn.close()
+        clear_admin_state(chat_id)
+        telegram_send_message(chat_id, f"✅ \"{w['word']}\" (#{w['id']}) o'chirildi.", admin_main_menu())
+        return True
+
+    if action == "await_logo_photo":
+        telegram_send_message(chat_id, "Iltimos, rasm (photo) sifatida yuboring, matn emas.")
+        return True
+
+    if action.startswith("await_startmsg_"):
+        lang = action.split("_")[-1]
+        set_setting(f"start_message_{lang}", text.strip())
+        clear_admin_state(chat_id)
+        telegram_send_message(chat_id, "✅ Start xabari saqlandi.", admin_main_menu())
+        return True
+
+    if action == "await_sentlimit":
+        parts = text.strip().split()
+        if len(parts) != 3 or parts[0] not in ("A1", "A2", "B1", "B2", "C1", "C2"):
+            telegram_send_message(chat_id, "Format: A1 3 15  (daraja, min, max)")
+            return True
+        try:
+            level, mn, mx = parts[0], int(parts[1]), int(parts[2])
+            data = json.loads(get_setting("sentence_limits"))
+            data[level] = {"min": mn, "max": mx}
+            set_setting("sentence_limits", json.dumps(data))
+            clear_admin_state(chat_id)
+            telegram_send_message(chat_id, f"✅ {level}: {mn}-{mx} so'z saqlandi.", admin_main_menu())
+        except Exception:
+            telegram_send_message(chat_id, "❌ Xato format. Masalan: A1 3 15")
+        return True
+
+    return False
+
+def handle_admin_callback(chat_id, message_id, data, callback_id):
+    clear_admin_state(chat_id)
+
+    if data == "adm_channels":
+        conn = db()
+        rows = conn.execute("SELECT * FROM channels").fetchall()
+        conn.close()
+        text = "📢 Kanallar:\n\n" + "\n".join([f"#{r['id']} {r['chat_ref']} ({r['kind']})" for r in rows]) if rows else "📢 Kanallar yo'q."
+        telegram_edit_message(chat_id, message_id, text, {"inline_keyboard": [
+            [{"text": "➕ Qo'shish", "callback_data": "adm_channel_add"}, {"text": "➖ O'chirish", "callback_data": "adm_channel_remove"}],
+            [{"text": "⬅️ Orqaga", "callback_data": "adm_back"}],
+        ]})
+    elif data == "adm_channel_add":
+        telegram_edit_message(chat_id, message_id, "Qanday turdagi kanal qo'shmoqchisiz?", {"inline_keyboard": [
+            [{"text": "📣 Ommaviy kanal", "callback_data": "adm_channel_add_public"}],
+            [{"text": "🔒 Maxfiy (so'rov bilan) kanal", "callback_data": "adm_channel_add_private"}],
+            [{"text": "🔗 Ixtiyoriy kanal/havola", "callback_data": "adm_channel_add_optional"}],
+            [{"text": "⬅️ Orqaga", "callback_data": "adm_channels"}],
+        ]})
+    elif data == "adm_channel_add_public":
+        admin_state[chat_id] = {"action": "await_public_ref"}
+        telegram_send_message(chat_id, "📣 Ommaviy kanal username'ini yuboring (@mychannel).\n\n⚠️ Botni shu kanalga ADMIN qilib qo'shing.")
+    elif data == "adm_channel_add_private":
+        admin_state[chat_id] = {"action": "await_private_id"}
+        telegram_send_message(chat_id, "🔒 Kanal ID raqamini yuboring (-1001234567890).\n\n⚠️ Botni shu kanalga ADMIN qilib qo'shing.")
+    elif data == "adm_channel_add_optional":
+        admin_state[chat_id] = {"action": "await_optional_ref"}
+        telegram_send_message(chat_id, "🔗 Ixtiyoriy kanal username'ini (@kanal) yoki havolasini yuboring.")
+    elif data == "adm_channel_remove":
+        admin_state[chat_id] = {"action": "await_channel_remove"}
+        telegram_send_message(chat_id, "O'chirish uchun kanal ID raqamini yuboring (#raqam).")
+    elif data == "adm_users":
+        telegram_edit_message(chat_id, message_id, "👥 Foydalanuvchilar boshqaruvi:", {"inline_keyboard": [
+            [{"text": "🚫 Bloklash", "callback_data": "adm_ban"}, {"text": "✅ Blokdan chiqarish", "callback_data": "adm_unban"}],
+            [{"text": "⬅️ Orqaga", "callback_data": "adm_back"}],
+        ]})
+    elif data == "adm_ban":
+        admin_state[chat_id] = {"action": "await_ban"}
+        telegram_send_message(chat_id, "Bloklash uchun Telegram ID yuboring:")
+    elif data == "adm_unban":
+        admin_state[chat_id] = {"action": "await_unban"}
+        telegram_send_message(chat_id, "Blokdan chiqarish uchun Telegram ID yuboring:")
+    elif data == "adm_payments":
+        price = get_setting("price_per_1000", "2500")
+        card = get_setting("payment_card") or "kiritilmagan"
+        min_cr = get_setting("min_credits_purchase", "100")
+        telegram_edit_message(chat_id, message_id, f"💳 Narx: {price} so'm / 1000 kredit\n💳 Karta: {card}\n📉 Minimal xarid: {min_cr} kredit", {"inline_keyboard": [
+            [{"text": "✏️ Narxni o'zgartirish", "callback_data": "adm_price"}],
+            [{"text": "💳 Karta raqami", "callback_data": "adm_card"}],
+            [{"text": "📉 Minimal kredit", "callback_data": "adm_mincredits"}],
+            [{"text": "⬅️ Orqaga", "callback_data": "adm_back"}],
+        ]})
+    elif data == "adm_price":
+        admin_state[chat_id] = {"action": "await_price"}
+        telegram_send_message(chat_id, "Yangi narxni kiriting (so'm, 1000 kredit uchun, masalan 2500):")
+    elif data == "adm_mincredits":
+        admin_state[chat_id] = {"action": "await_min_credits"}
+        telegram_send_message(chat_id, "Minimal xarid qilinadigan kredit sonini yuboring (masalan 100):")
+    elif data == "adm_card":
+        admin_state[chat_id] = {"action": "await_card_number"}
+        telegram_send_message(chat_id, "Karta raqami va egasini yuboring (masalan: 8600 1234 5678 9012 - F.I.Sh):")
+    elif data == "adm_pendingwords":
+        conn = db()
+        rows = conn.execute("SELECT * FROM words WHERE status='pending_admin' LIMIT 10").fetchall()
+        conn.close()
+        if not rows:
+            telegram_edit_message(chat_id, message_id, "🆕 Yangi so'z takliflari yo'q.", {"inline_keyboard": [[{"text": "⬅️ Orqaga", "callback_data": "adm_back"}]]})
+        else:
+            text = "🆕 Kutilayotgan takliflar:\n\n" + "\n".join([f"#{r['id']} {r['word']} ({r['base_level']})" for r in rows])
+            telegram_edit_message(chat_id, message_id, text, {"inline_keyboard": [[{"text": "⬅️ Orqaga", "callback_data": "adm_back"}]]})
+    elif data == "adm_delword":
+        admin_state[chat_id] = {"action": "await_delete_word"}
+        telegram_send_message(chat_id, "O'chirmoqchi bo'lgan so'zning ID raqamini (#123) yoki so'zning o'zini (aniq, masalan: chicken) yuboring:")
+    elif data == "adm_sentlimits":
+        limits = json.loads(get_setting("sentence_limits"))
+        text = "✏️ Gap chegaralari (daraja: min-max so'z):\n\n" + "\n".join([f"{lvl}: {v['min']}-{v['max']}" for lvl, v in limits.items()])
+        admin_state[chat_id] = {"action": "await_sentlimit"}
+        telegram_edit_message(chat_id, message_id, text + "\n\nO'zgartirish uchun yuboring: A1 3 15", {"inline_keyboard": [[{"text": "⬅️ Orqaga", "callback_data": "adm_back"}]]})
+    elif data == "adm_startmsg":
+        telegram_edit_message(chat_id, message_id, "💬 Qaysi til uchun start xabarini o'zgartirasiz?", {"inline_keyboard": [
+            [{"text": "🇺🇿 UZ", "callback_data": "adm_startmsg_uz"}, {"text": "🇷🇺 RU", "callback_data": "adm_startmsg_ru"}, {"text": "🇬🇧 EN", "callback_data": "adm_startmsg_en"}],
+            [{"text": "⬅️ Orqaga", "callback_data": "adm_back"}],
+        ]})
+    elif data.startswith("adm_startmsg_"):
+        lang = data.split("_")[-1]
+        admin_state[chat_id] = {"action": f"await_startmsg_{lang}"}
+        telegram_send_message(chat_id, f"Yangi start xabarini ({lang}) yuboring:")
+    elif data == "adm_settings":
+        telegram_edit_message(chat_id, message_id, "⚙️ Sozlamalar:", {"inline_keyboard": [
+            [{"text": "🌐 Webapp domen", "callback_data": "adm_set_webapp"}],
+            [{"text": "🖥 Backend domen", "callback_data": "adm_set_backend"}],
+            [{"text": "🤖 AI (Groq) kalit", "callback_data": "adm_set_groq"}],
+            [{"text": "🖼 Logo (rasm yuborish)", "callback_data": "adm_set_logo"}],
+            [{"text": "🎨 Fon rangi (hex)", "callback_data": "adm_set_bg"}],
+            [{"text": "📚 Asosiy kanal (yangi so'z + yangiliklar)", "callback_data": "adm_set_mainchannel"}],
+            [{"text": "🆘 Yordam admin (@)", "callback_data": "adm_set_help"}],
+            [{"text": "✨ Bot xabar emoji", "callback_data": "adm_set_botemoji"}],
+            [{"text": "🎁 Referral bonus (kredit)", "callback_data": "adm_set_refbonus"}],
+            [{"text": "📄 Fayl tahlili narxi", "callback_data": "adm_set_fileparse"}, {"text": "🔤 Har so'z narxi", "callback_data": "adm_set_fileword"}],
+            [{"text": "🤖 So'z takliflarida AI tekshiruv: yoqish/o'chirish", "callback_data": "adm_toggle_autoai"}],
+            [{"text": "⬅️ Orqaga", "callback_data": "adm_back"}],
+        ]})
+    elif data == "adm_set_webapp":
+        admin_state[chat_id] = {"action": "await_webapp_domain"}
+        telegram_send_message(chat_id, "Webapp (index.html) joylashgan https manzilni yuboring:")
+    elif data == "adm_set_backend":
+        admin_state[chat_id] = {"action": "await_backend_domain"}
+        telegram_send_message(chat_id, "Backend (app.py) joylashgan https manzilni yuboring:")
+    elif data == "adm_set_groq":
+        admin_state[chat_id] = {"action": "await_groq_key"}
+        telegram_send_message(chat_id, "GROQ_API_KEY ni yuboring:")
+    elif data == "adm_set_logo":
+        admin_state[chat_id] = {"action": "await_logo_photo"}
+        telegram_send_message(chat_id, "Endi logo rasmini shu chatga rasm (photo) sifatida yuboring:")
+    elif data == "adm_set_bg":
+        admin_state[chat_id] = {"action": "await_bg_color"}
+        telegram_send_message(chat_id, "Fon rangini hex formatda yuboring (masalan #F8F9FC):")
+    elif data == "adm_set_mainchannel":
+        admin_state[chat_id] = {"action": "await_mainchannel"}
+        telegram_send_message(chat_id, "Asosiy kanal username'ini yuboring — yangi so'zlar va yangiliklar shu yerga e'lon qilinadi (masalan @unlockword):")
+    elif data == "adm_set_help":
+        admin_state[chat_id] = {"action": "await_help_admin"}
+        telegram_send_message(chat_id, "Yordam uchun admin username'ini yuboring (@...):")
+    elif data == "adm_set_botemoji":
+        admin_state[chat_id] = {"action": "await_bot_emoji"}
+        telegram_send_message(chat_id, "Bot avtomatik xabarlarida ishlatiladigan emojini yuboring (masalan ✨ yoki 🔥):")
+    elif data == "adm_set_refbonus":
+        admin_state[chat_id] = {"action": "await_referral_bonus"}
+        telegram_send_message(chat_id, f"Referral uchun beriladigan bonus kreditni yuboring (hozir: {get_setting('referral_bonus','50')}):")
+    elif data == "adm_set_fileparse":
+        admin_state[chat_id] = {"action": "await_file_parse_price"}
+        telegram_send_message(chat_id, f"Fayl tahlili uchun bir martalik narxni (kredit) yuboring (hozir: {get_setting('file_parse_price','1')}):")
+    elif data == "adm_set_fileword":
+        admin_state[chat_id] = {"action": "await_file_word_price"}
+        telegram_send_message(chat_id, f"Fayldagi har bir so'z uchun narxni (kredit) yuboring (hozir: {get_setting('file_word_price','1')}):")
+    elif data == "adm_toggle_autoai":
+        cur = get_setting("auto_ai_check_suggestions", "0")
+        new = "0" if cur == "1" else "1"
+        set_setting("auto_ai_check_suggestions", new)
+        telegram_answer_callback(callback_id, "Yoqildi" if new == "1" else "O'chirildi")
+    elif data == "adm_back":
+        telegram_edit_message(chat_id, message_id, "🔧 Admin panel", admin_main_menu())
+    elif data.startswith("word_approve_"):
+        wid = int(data.split("_")[-1])
+        conn = db()
+        conn.execute("UPDATE words SET status='active' WHERE id=?", (wid,))
+        w = conn.execute("SELECT * FROM words WHERE id=?", (wid,)).fetchone()
+        conn.commit()
+        if w and w["suggested_by"]:
+            submitter = conn.execute("SELECT telegram_id FROM users WHERE id=?", (w["suggested_by"],)).fetchone()
+            if submitter:
+                msg = f"✅ Sizning \"{w['word']}\" so'zingiz qabul qilindi va lug'atga qo'shildi!"
+                telegram_send_message(submitter["telegram_id"], msg)
+                add_notification(w["suggested_by"], msg)
+        main_ch = get_setting("main_channel")
+        if main_ch and w:
+            emoji = get_setting("bot_message_emoji", "✨")
+            telegram_send_message(main_ch, f"{emoji} Yangi so'z qo'shildi: {w['word']} ({w['base_level']})")
+        conn.close()
+        telegram_answer_callback(callback_id, "Qabul qilindi")
+        telegram_edit_message(chat_id, message_id, "✅ So'z qabul qilindi va lug'atga qo'shildi.")
+    elif data.startswith("word_reject_"):
+        wid = int(data.split("_")[-1])
+        conn = db()
+        w = conn.execute("SELECT * FROM words WHERE id=?", (wid,)).fetchone()
+        if w and w["suggested_by"]:
+            submitter = conn.execute("SELECT telegram_id FROM users WHERE id=?", (w["suggested_by"],)).fetchone()
+            if submitter:
+                msg = f"❌ Sizning \"{w['word']}\" so'z taklifingiz rad etildi."
+                telegram_send_message(submitter["telegram_id"], msg)
+                add_notification(w["suggested_by"], msg)
+        conn.execute("DELETE FROM words WHERE id=?", (wid,))
+        conn.commit()
+        conn.close()
+        telegram_answer_callback(callback_id, "Rad etildi")
+        telegram_edit_message(chat_id, message_id, "❌ So'z rad etildi.")
+    elif data.startswith("pay_approve_"):
+        pid = int(data.split("_")[-1])
+        conn = db()
+        p = conn.execute("SELECT * FROM pending_payments WHERE id=?", (pid,)).fetchone()
+        if p and p["status"] == "awaiting_confirm":
+            conn.execute("UPDATE users SET credits = credits + ? WHERE id=?", (p["credits_to_add"], p["user_id"]))
+            conn.execute("UPDATE pending_payments SET status='approved' WHERE id=?", (pid,))
+            conn.commit()
+            u = conn.execute("SELECT telegram_id FROM users WHERE id=?", (p["user_id"],)).fetchone()
+            telegram_send_message(u["telegram_id"], f"✅ To'lovingiz tasdiqlandi! {p['credits_to_add']} so'z limiti qo'shildi.")
+        conn.close()
+        telegram_answer_callback(callback_id, "Tasdiqlandi")
+        telegram_edit_message(chat_id, message_id, "✅ To'lov tasdiqlandi.")
+    elif data.startswith("pay_reject_"):
+        pid = int(data.split("_")[-1])
+        conn = db()
+        p = conn.execute("SELECT * FROM pending_payments WHERE id=?", (pid,)).fetchone()
+        if p:
+            conn.execute("UPDATE pending_payments SET status='rejected' WHERE id=?", (pid,))
+            conn.commit()
+            u = conn.execute("SELECT telegram_id FROM users WHERE id=?", (p["user_id"],)).fetchone()
+            telegram_send_message(u["telegram_id"], "❌ To'lovingiz tasdiqlanmadi.")
+        conn.close()
+        telegram_answer_callback(callback_id, "Bekor qilindi")
+        telegram_edit_message(chat_id, message_id, "❌ To'lov bekor qilindi.")
+    elif data.startswith("firstlang_"):
+        lang = data.split("_")[-1]
+        conn = db()
+        u = conn.execute("SELECT * FROM users WHERE telegram_id=?", (chat_id,)).fetchone()
+        if not u:
+            conn.execute("INSERT INTO users (telegram_id, name, nickname, credits, lang, created_at) VALUES (?,?,?,?,?,?)",
+                         (chat_id, "", "", 0, lang, now_iso()))
+        else:
+            conn.execute("UPDATE users SET lang=? WHERE telegram_id=?", (lang, chat_id))
+        conn.commit()
+        conn.close()
+        telegram_answer_callback(callback_id, "OK")
+        if lang == "en":
+            telegram_edit_message(chat_id, message_id, "✅ Language set to English.")
+            send_lang2_menu(chat_id)
+        else:
+            telegram_edit_message(chat_id, message_id, "✅ Til saqlandi." if lang == "uz" else "✅ Язык сохранён.")
+            send_start_message(chat_id, lang)
+    elif data.startswith("setlang2_"):
+        lang2 = data.split("_")[-1]
+        conn = db(); conn.execute("UPDATE users SET secondary_lang=? WHERE telegram_id=?", (lang2, chat_id)); conn.commit(); conn.close()
+        telegram_answer_callback(callback_id, "OK")
+        telegram_edit_message(chat_id, message_id, "✅ Saqlandi.")
+        send_start_message(chat_id, "en")
+    elif data.startswith("setlang_"):
+        lang = data.split("_")[-1]
+        conn = db(); conn.execute("UPDATE users SET lang=? WHERE telegram_id=?", (lang, chat_id)); conn.commit(); conn.close()
+        telegram_answer_callback(callback_id, "OK")
+        confirms = {"uz": "✅ Til o'zbekchaga o'zgartirildi.", "ru": "✅ Язык изменён на русский.", "en": "✅ Language changed to English."}
+        telegram_edit_message(chat_id, message_id, confirms.get(lang, confirms["uz"]))
+        if lang == "en":
+            send_lang2_menu(chat_id)
+
+def telegram_polling_loop():
+    offset = 0
+    while True:
+        try:
+            data = requests.get(f"{TG_API}/getUpdates", params={"timeout": 25, "offset": offset}, timeout=35).json()
+            if not data.get("ok"):
+                time.sleep(3)
+                continue
+            for update in data.get("result", []):
+                offset = update["update_id"] + 1
+
+                if "callback_query" in update:
+                    cq = update["callback_query"]
+                    chat_id = cq["message"]["chat"]["id"]
+                    message_id = cq["message"]["message_id"]
+                    cb_data = cq.get("data", "")
+                    if cb_data == "check_sub":
+                        ok, missing = check_user_subscription(chat_id)
+                        if ok:
+                            telegram_answer_callback(cq["id"], "✅ Obuna tasdiqlandi!")
+                            send_start_message(chat_id)
+                        else:
+                            telegram_answer_callback(cq["id"], "❌ Hali obuna bo'lmagansiz.")
+                        continue
+                    if cb_data.startswith("setlang_") or cb_data.startswith("firstlang_") or cb_data.startswith("setlang2_"):
+                        handle_admin_callback(chat_id, message_id, cb_data, cq["id"])
+                        continue
+                    if chat_id == ADMIN_ID:
+                        handle_admin_callback(chat_id, message_id, cb_data, cq["id"])
+                    continue
+
+                message = update.get("message") or {}
+                chat = message.get("chat") or {}
+                chat_id = chat.get("id")
+                if not chat_id:
+                    continue
+
+                if "photo" in message:
+                    file_id = message["photo"][-1]["file_id"]
+                    is_admin_logo = chat_id == ADMIN_ID and admin_state.get(chat_id, {}).get("action") == "await_logo_photo"
+                    url = telegram_get_file_url(file_id)
+                    if url:
+                        if is_admin_logo:
+                            set_setting("logo_url", url)
+                            clear_admin_state(chat_id)
+                            telegram_send_message(chat_id, "✅ Logo saqlandi.", admin_main_menu())
+                        else:
+                            conn = db()
+                            u = conn.execute("SELECT * FROM users WHERE telegram_id=?", (chat_id,)).fetchone()
+                            if u:
+                                conn.execute("UPDATE users SET avatar_url=? WHERE telegram_id=?", (url, chat_id))
+                                conn.commit()
+                                telegram_send_message(chat_id, "✅ Rasm profilingizga saqlandi.")
+                            conn.close()
+                    continue
+
+                text = message.get("text", "")
+                if not text:
+                    continue
+
+                if text == "/lang":
+                    clear_admin_state(chat_id) if chat_id == ADMIN_ID else None
+                    send_lang_menu(chat_id)
+                    continue
+
+                if text == "/lang2":
+                    conn = db()
+                    u = conn.execute("SELECT lang FROM users WHERE telegram_id=?", (chat_id,)).fetchone()
+                    conn.close()
+                    if u and u["lang"] == "en":
+                        send_lang2_menu(chat_id)
+                    continue
+
+                if chat_id == ADMIN_ID and handle_admin_command(chat_id, text):
+                    continue
+
+                if chat_id == ADMIN_ID and not admin_state.get(chat_id):
+                    low = text.lower()
+                    if ("uzs" in low or "so'm" in low or "som" in low or "+" in text) and any(ch.isdigit() for ch in text):
+                        amount = parse_uzs_amount_to_int(text)
+                        if amount > 0:
+                            res = auto_confirm_payment_by_amount(amount, source="auto")
+                            if res:
+                                telegram_send_message(
+                                    chat_id,
+                                    f"✅ {amount} so'mlik to'lov {res['display_id']} ID egasiga mos keldi — "
+                                    f"{res['credits']} kredit avtomatik qo'shildi.",
+                                )
+                            else:
+                                telegram_send_message(
+                                    chat_id,
+                                    f"ℹ️ {amount} so'mga mos kutilayotgan to'lov topilmadi (yoki muddati o'tgan).",
+                                )
+                            continue
+
+                if text == "/start":
+                    conn = db()
+                    urow = conn.execute("SELECT lang FROM users WHERE telegram_id=?", (chat_id,)).fetchone()
+                    conn.close()
+                    if not urow or not urow["lang"]:
+                        send_lang_menu(chat_id, first_time=True)
+                    else:
+                        send_start_message(chat_id, urow["lang"])
+
+        except Exception:
+            time.sleep(3)
+
+def review_notifier_loop():
+    while True:
+        try:
+            conn = db()
+            due = conn.execute(
+                "SELECT b.id, u.telegram_id, u.lang, b.levels FROM batches b "
+                "JOIN users u ON u.id=b.user_id "
+                "WHERE b.status='review_wait' AND b.next_review_at <= ?",
+                (now_iso(),),
+            ).fetchall()
+            for row in due:
+                texts = {
+                    "uz": "🔔 Review tayyor! So'zlaringizni takrorlash vaqti keldi.",
+                    "ru": "🔔 Повторение готово! Пора повторить слова.",
+                    "en": "🔔 Review ready! Time to review your words.",
+                }
+                lang = row["lang"] or "uz"
+                url = webapp_url_for_bot()
+                markup = {"inline_keyboard": [[{"text": "🚀 UnlockWord", "web_app": {"url": url}}]]} if url else None
+                telegram_send_message(row["telegram_id"], texts.get(lang, texts["uz"]), markup)
+                conn.execute("UPDATE batches SET status='review_ready' WHERE id=?", (row["id"],))
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
+        time.sleep(30)
+
+def start_telegram_bot():
+    if not BOOTSTRAP["TELEGRAM_BOT_TOKEN"]:
+        return
+    try:
+        requests.get(f"{TG_API}/deleteWebhook", params={"drop_pending_updates": False}, timeout=10)
+    except Exception:
+        pass
+    threading.Thread(target=telegram_polling_loop, daemon=True).start()
+    threading.Thread(target=expire_old_payments_loop, daemon=True).start()
+    threading.Thread(target=review_notifier_loop, daemon=True).start()
+
+start_telegram_bot()
 
 @app.get("/")
 @app.get("/index.html")
