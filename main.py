@@ -6,14 +6,15 @@ import aiohttp
 from typing import List, Dict, Any
 
 from aiogram import Bot, Dispatcher, F, types
-from aiogram.filters import CommandStart, Command
+from aiogram.filters import CommandStart
 from aiogram.types import FSInputFile, ReplyKeyboardMarkup, KeyboardButton
 
 # ================= SOZLAMALAR =================
-BOT_TOKEN = "8667568468:AAGtXf0m4vfYCN61v7t5RdSwZ6fdzmDpwrw"
-ADMIN_ID = 8996452952
+# BotFather dan yangi token olib shu yerga qo'ying
+BOT_TOKEN = "YANGI_TELEGRAM_BOT_TOKEN"
+ADMIN_ID = 8996452952  # O'zingizning aniq Telegram ID raqamingiz
 DB_FILE = "unlockword_data.db"
-BATCH_SIZE = 20  # Gemini ga bir martada yuboriladigan so'zlar soni
+BATCH_SIZE = 20
 # ===============================================
 
 bot = Bot(token=BOT_TOKEN)
@@ -68,7 +69,6 @@ def set_setting(key: str, value: str):
     conn.commit()
     conn.close()
 
-# ================= ADMIN FILTER =================
 def is_admin(user_id: int) -> bool:
     return user_id == ADMIN_ID
 
@@ -110,7 +110,7 @@ async def process_batch_with_gemini(words_batch: List[Dict[str, Any]], api_key: 
             raw_text = res_json['candidates'][0]['content']['parts'][0]['text']
             return json.loads(raw_text)
 
-# ================= ASOSIY ISHCHI SIKL =================
+# ================= WORKER LOOP =================
 async def worker_loop():
     while True:
         is_running = get_setting("is_running", "0")
@@ -133,7 +133,6 @@ async def worker_loop():
         conn.close()
 
         if not rows:
-            # Ish yakunlandi
             set_setting("is_running", "0")
             await finish_and_send_file()
             continue
@@ -144,7 +143,6 @@ async def worker_loop():
         try:
             results = await process_batch_with_gemini(batch, api_key)
             
-            # Natijalarni saqlash
             conn = sqlite3.connect(DB_FILE)
             c = conn.cursor()
             for item in results:
@@ -164,24 +162,22 @@ async def worker_loop():
             c.executemany("UPDATE words_queue SET status = 'done' WHERE id = ?", [(i,) for i in ids])
             conn.commit()
 
-            # Progress hisoblash
             c.execute("SELECT COUNT(*) FROM words_queue WHERE status = 'done'")
             done_count = c.fetchone()[0]
             c.execute("SELECT COUNT(*) FROM words_queue")
             total_count = c.fetchone()[0]
             conn.close()
 
-            # Har 1000 ta so'zda xabar berish
             last_alert = int(get_setting("last_alert_step", "0"))
             if done_count // 1000 > last_alert:
                 set_setting("last_alert_step", str(done_count // 1000))
                 remaining = total_count - done_count
                 await bot.send_message(
                     ADMIN_ID, 
-                    f"📊 **Progress hisoboti:**\n\n✅ Qayta ishlandi: {done_count} ta\n⏳ Qolgan asosiy so'zlar: {remaining} ta"
+                    f"📊 **Progress:**\n\n✅ Qayta ishlandi: {done_count} ta\n⏳ Qolgan: {remaining} ta"
                 )
 
-            await asyncio.sleep(1.5)  # API yuklamasini me'yorda ushlab turish
+            await asyncio.sleep(1.5)
 
         except Exception as e:
             err = str(e)
@@ -189,18 +185,17 @@ async def worker_loop():
                 set_setting("is_running", "0")
                 await bot.send_message(
                     ADMIN_ID,
-                    "⚠️ **Gemini API kalit limitga yetdi yoki xato berdi!**\n\n"
-                    "Iltimos, yangi Gemini API kalitingizni botga yuboring. Jarayon qolgan joyidan davom etadi."
+                    "⚠️ **Gemini API kalit limitga yetdi yoki yaroqsiz!**\nYangi API kalit yuboring."
                 )
                 resume_event.clear()
                 await resume_event.wait()
             else:
-                await bot.send_message(ADMIN_ID, f"⚠️ Kichik xatolik (qayta urinilmoqda): {err}")
+                await bot.send_message(ADMIN_ID, f"⚠️ Xatolik: {err}")
                 await asyncio.sleep(5)
 
-# ================= YAKUNIY JSON TAYYORLASH VA YUBORISH =================
+# ================= YAKUNIY JSON =================
 async def finish_and_send_file():
-    await bot.send_message(ADMIN_ID, "🎉 Barcha so'zlar qayta ishlandi! Yakuniy JSON shakllantirilmoqda...")
+    await bot.send_message(ADMIN_ID, "🎉 Barcha so'zlar qayta ishlandi! JSON fayl shakllantirilmoqda...")
 
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -209,7 +204,6 @@ async def finish_and_send_file():
     conn.close()
 
     level_order = {"A1": 1, "A2": 2, "B1": 3, "B2": 4, "C1": 5, "C2": 6}
-    
     formatted_data = []
     seen = set()
 
@@ -222,7 +216,6 @@ async def finish_and_send_file():
         except:
             continue
 
-        # Duplikat tekshirish (word + birinchi ma'no + level)
         unique_key = (word.lower(), level, tuple(m_uz_list[:1]))
         if unique_key in seen:
             continue
@@ -238,10 +231,8 @@ async def finish_and_send_file():
             "examples": ex_list[:2]
         })
 
-    # Sort A1 -> C2
     formatted_data.sort(key=lambda x: (level_order.get(x["level"], 99), x["word"].lower()))
 
-    # ID va Rank berish (1 dan boshlab)
     final_output = []
     for idx, item in enumerate(formatted_data, start=1):
         final_output.append({
@@ -264,10 +255,10 @@ async def finish_and_send_file():
     await bot.send_document(
         ADMIN_ID, 
         doc, 
-        caption=f"✅ **Baza tayyor!**\n\nJami yozuvlar: {len(final_output)} ta.\nBarcha qoidalar va CEFR tartibi to'liq bajarildi."
+        caption=f"✅ **Baza tayyor!**\n\nJami: {len(final_output)} ta yozuv."
     )
 
-# ================= TELEGRAM HANDLERS =================
+# ================= HANDLERS =================
 @dp.message(CommandStart())
 async def cmd_start(message: types.Message):
     if not is_admin(message.from_user.id):
@@ -282,9 +273,8 @@ async def cmd_start(message: types.Message):
     )
     await message.answer(
         "👋 **UnlockWord Generator Botiga xush kelibsiz!**\n\n"
-        "1. 24 648 ta so'zli `.json` faylni botga yuboring.\n"
-        "2. Gemini API kalitini xabar sifatida yuboring.\n"
-        "3. Bot to'xtovsiz ishlab, har 1000 ta so'zda hisobot beradi.",
+        "1. `.json` faylni botga yuboring.\n"
+        "2. Gemini API kalitini xabar sifatida yuboring.",
         reply_markup=kb
     )
 
@@ -306,10 +296,10 @@ async def check_status(message: types.Message):
     status_text = "🟢 Ishlamoqda" if is_run == "1" else "🔴 To'xtatilgan"
     await message.answer(
         f"📊 **Hozirgi holat:** {status_text}\n\n"
-        f"📦 Jami yuklangan so'zlar: {total} ta\n"
-        f"✅ Qayta ishlangan: {done} ta\n"
-        f"⏳ Qolgan: {total - done} ta\n"
-        f"📑 Yaratilgan jami entrylar: {res_count} ta"
+        f"📦 Jami so'zlar: {total} ta\n"
+        f"✅ Bajarildi: {done} ta\n"
+        f"⏳ Qoldi: {total - done} ta\n"
+        f"📑 Yaratilgan qatorlar: {res_count} ta"
     )
 
 @dp.message(F.text == "🛑 To'xtatish")
@@ -334,24 +324,25 @@ async def handle_document(message: types.Message):
     
     doc = message.document
     if not doc.file_name.endswith('.json'):
-        await message.answer("❌ Iltimos, faqat `.json` formatdagi fayl yuboring.")
+        await message.answer("❌ Faqat `.json` fayl yuboring.")
         return
 
-    await message.answer("📥 Fayl qabul qilindi, tahlil qilinmoqda...")
+    await message.answer("📥 Fayl yuklanmoqda...")
     file_path = f"temp_{doc.file_name}"
-    await bot.download(doc, destination=file_path)
+    file = await bot.get_file(doc.file_id)
+    await bot.download_file(file.file_path, file_path)
 
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         if not isinstance(data, list):
-            await message.answer("❌ JSON fayl array (ro'yxat) shaklida bo'lishi kerak.")
+            await message.answer("❌ JSON massiv (array) ko'rinishida bo'lishi kerak.")
             return
 
         conn = sqlite3.connect(DB_FILE)
         c = conn.cursor()
-        c.execute("DELETE FROM words_queue")  # yangi navbat
+        c.execute("DELETE FROM words_queue")
         c.execute("DELETE FROM results")
 
         inserted = 0
@@ -364,16 +355,18 @@ async def handle_document(message: types.Message):
 
         conn.commit()
         conn.close()
-        os.remove(file_path)
+        
+        if os.path.exists(file_path):
+            os.remove(file_path)
 
         set_setting("is_running", "1")
         set_setting("last_alert_step", "0")
         resume_event.set()
 
-        await message.answer(f"✅ Baza yaratildi! Jami **{inserted}** ta so'z navbatga qo'yildi.\nIsh boshlandi...")
+        await message.answer(f"✅ Baza yuklandi! Jami **{inserted}** ta so'z navbatga qo'yildi.")
 
     except Exception as e:
-        await message.answer(f"❌ Faylni o'qishda xatolik: {e}")
+        await message.answer(f"❌ Xatolik: {e}")
 
 @dp.message(F.text)
 async def handle_text(message: types.Message):
@@ -381,20 +374,19 @@ async def handle_text(message: types.Message):
         return
     
     text = message.text.strip()
-    # Agar API kalit ko'rinishida bo'lsa (AIzaSy...)
     if text.startswith("AIzaSy") and len(text) > 30:
         set_setting("gemini_api_key", text)
         set_setting("is_running", "1")
         resume_event.set()
-        await message.answer("🔑 **Yangi Gemini API kaliti qabul qilindi!**\nJarayon darhol davom ettirilmoqda...")
+        await message.answer("🔑 **API kalit saqlandi!** Jarayon boshlandi...")
     elif text.startswith("/setkey "):
         key = text.split(" ", 1)[1].strip()
         set_setting("gemini_api_key", key)
         set_setting("is_running", "1")
         resume_event.set()
-        await message.answer("🔑 **Gemini API kaliti yangilandi!** Ish davom etmoqda...")
+        await message.answer("🔑 **API kalit saqlandi!** Jarayon boshlandi...")
 
-# ================= ISHGA TUSHIRISH =================
+# ================= ASOSIY TIZIM =================
 async def main():
     init_db()
     asyncio.create_task(worker_loop())
