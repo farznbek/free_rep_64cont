@@ -2,1495 +2,509 @@
 <html lang="uz">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no">
 <title>UnlockWord</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-  :root{
-    --accent:#4F46E5; --accent2:#7C3AED; --accent3:#6366F1;
-    --green:#22C55E; --yellow:#F59E0B; --red:#F43F5E; --pink:#EC4899; --teal:#14B8A6; --orange:#F97316;
-    --bg:#0F172A; --bg2:#1E293B; --card:rgba(30,41,59,.55); --card-solid:#1E293B;
-    --text:#FFFFFF; --muted:#94A3B8; --border:rgba(148,163,184,.14);
-    --glass:rgba(30,41,59,.6); --glass-strong:rgba(15,23,42,.75);
+  :root {
+    --accent: #4F46E5; --accent2: #7C3AED;
+    --bg: #0F172A; --bg2: #1E293B; --card: #1E293B;
+    --text: #FFFFFF; --muted: #94A3B8; --border: rgba(148,163,184,.14);
+    --green: #22C55E; --yellow: #F59E0B; --red: #F43F5E; --teal: #14B8A6;
   }
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;}
-  body{
-    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',Roboto,sans-serif;
-    color:var(--text); min-height:100vh;
-    background:
-      radial-gradient(1200px 600px at 15% -10%, rgba(124,58,237,.28), transparent 60%),
-      radial-gradient(1000px 500px at 110% 10%, rgba(79,70,229,.30), transparent 55%),
-      radial-gradient(900px 700px at 50% 120%, rgba(99,102,241,.18), transparent 60%),
-      linear-gradient(180deg,#0F172A 0%, #131C31 55%, #0F172A 100%);
-    background-attachment:fixed;
+  .light {
+    --bg: #F8FAFC; --bg2: #F1F5F9; --card: #FFFFFF;
+    --text: #0F172A; --muted: #64748B; --border: rgba(15,23,42,.1);
   }
-  ::-webkit-scrollbar{width:0; height:0;}
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--text); background: var(--bg); margin: 0; min-height: 100vh; transition: background 0.3s, color 0.3s; }
+  
+  header { position: sticky; top: 0; z-index: 20; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; background: var(--card); border-bottom: 1px solid var(--border); }
+  header .logo { width: 38px; height: 38px; border-radius: 12px; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 20px; color: #fff; }
+  header h1 { font-size: 17px; margin: 0; font-weight: 800; }
+  header .icon-btn { background: var(--bg2); border: 1px solid var(--border); color: var(--text); width: 36px; height: 36px; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: none; font-weight: bold; cursor: pointer;}
 
-  header{
-    position:sticky; top:0; z-index:20; cursor:pointer;
-    padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 12px;
-    display:flex; align-items:center; justify-content:space-between;
-    background:var(--glass-strong); backdrop-filter:blur(18px) saturate(160%); -webkit-backdrop-filter:blur(18px) saturate(160%);
-    border-bottom:1px solid var(--border);
-  }
-  header .left{display:flex; align-items:center; gap:10px; min-width:0;}
-  header .logo{font-size:20px; width:38px; height:38px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
-    border-radius:12px; background:linear-gradient(135deg,var(--accent),var(--accent2)); box-shadow:0 6px 18px rgba(79,70,229,.45);}
-  header .logo img{width:100%; height:100%; object-fit:cover; border-radius:12px;}
-  header h1{font-size:17px; margin:0; font-weight:800; letter-spacing:.3px;}
-  header .tagline{font-size:10px; color:var(--muted); margin-top:1px;}
-  header .right{display:flex; gap:8px; flex-shrink:0;}
-  header .icon-btn{background:rgba(255,255,255,.08); border:1px solid var(--border); color:#fff; width:36px; height:36px; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center;}
-  header .icon-btn:active{transform:scale(.92);}
+  main { padding: 16px 14px 100px; max-width: 520px; margin: 0 auto; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 16px; margin-bottom: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+  
+  .btn { width: 100%; color: #fff; border: none; padding: 14px; border-radius: 14px; font-weight: 800; font-size: 15px; background: linear-gradient(135deg, var(--accent), var(--accent2)); cursor: pointer; transition: opacity 0.2s; margin-top:8px;}
+  .btn.success { background: var(--green); }
+  .btn.teal { background: var(--teal); }
+  .btn.secondary { background: var(--bg2); color: var(--text); border: 1px solid var(--border); }
+  
+  input, select, textarea { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 14px; font-size: 15px; margin-bottom: 10px; background: var(--bg2); color: var(--text); outline: none; font-family: inherit; }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  
+  .badge { display: inline-block; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 8px; background: var(--bg2); color: var(--text); border: 1px solid var(--border); }
+  .muted { color: var(--muted); font-size: 13px; }
 
-  main{max-width:520px; margin:0 auto; padding:16px 14px 120px;}
-  .card{
-    background:var(--card); border:1px solid var(--border); border-radius:20px; padding:16px; margin-bottom:14px;
-    backdrop-filter:blur(14px) saturate(150%); -webkit-backdrop-filter:blur(14px) saturate(150%);
-    box-shadow:0 8px 30px rgba(2,6,23,.35);
-  }
-  .btn{color:#fff; border:none; padding:12px 16px; border-radius:14px; font-weight:700; font-size:14px; cursor:pointer;
-    background:linear-gradient(135deg,var(--accent),var(--accent2)); transition:transform .12s, opacity .12s; box-shadow:0 8px 22px rgba(79,70,229,.35);}
-  .btn:active{transform:scale(.96);}
-  .btn:hover{opacity:.94;}
-  .btn.secondary{background:rgba(255,255,255,.07); color:#C7CBFF; box-shadow:none; border:1px solid var(--border);}
-  .btn.success{background:linear-gradient(135deg,#16A34A,#22C55E); box-shadow:0 8px 22px rgba(34,197,94,.3);}
-  .btn.purple{background:linear-gradient(135deg,var(--accent2),#9333EA); box-shadow:0 8px 22px rgba(147,51,234,.32);}
-  .btn.teal{background:linear-gradient(135deg,#0D9488,#14B8A6); box-shadow:0 8px 22px rgba(20,184,166,.3);}
-  .btn.pink{background:linear-gradient(135deg,#DB2777,#EC4899); box-shadow:0 8px 22px rgba(236,72,153,.3);}
-  .btn.orange{background:linear-gradient(135deg,#EA580C,#F97316); box-shadow:0 8px 22px rgba(249,115,22,.3);}
-  .btn.block{width:100%;}
-  .btn:disabled{opacity:.45; cursor:not-allowed; box-shadow:none;}
-  input, select, textarea{width:100%; padding:12px 14px; border:1px solid var(--border); border-radius:14px; font-size:14px; margin-bottom:10px; font-family:inherit;
-    background:rgba(15,23,42,.55); color:var(--text); outline:none;}
-  input:focus, select:focus, textarea:focus{border-color:var(--accent3); box-shadow:0 0 0 3px rgba(99,102,241,.2);}
-  input::placeholder, textarea::placeholder{color:#64748B;}
-  input[readonly]{opacity:.7;}
-  select option{background:#1E293B; color:#fff;}
-  .badge{display:inline-block; font-size:11px; font-weight:800; padding:3px 9px; border-radius:20px; background:rgba(99,102,241,.18); color:#C7CBFF; border:1px solid rgba(99,102,241,.25);}
-  .muted{color:var(--muted); font-size:13px;}
-  .word-title{font-size:28px; font-weight:900; letter-spacing:.5px; background:linear-gradient(135deg,#fff,#C7CBFF); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;}
-  .progressbar{background:rgba(255,255,255,.08); border-radius:20px; height:10px; overflow:hidden; margin:10px 0;}
-  .progressbar > div{background:linear-gradient(90deg,var(--accent),var(--accent2)); height:100%; transition:width .3s;}
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 12px; }
+  .stat-box .v { font-size: 22px; font-weight: 900; margin-top: 4px; }
 
-  /* Updated iOS Floating Dock for Navigation */
+  .profile-row { display: flex; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid var(--border); font-weight: 700; cursor: pointer; }
+  .profile-row:last-child { border-bottom: none; }
+  .profile-row .icon-bg { width: 36px; height: 36px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  
+  .level-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .level-grid button { padding: 15px 0; border-radius: 12px; border: 1px solid var(--border); background: var(--bg2); color: var(--text); font-weight: 800; border:none; }
+  .level-grid button.selected { background: var(--accent); color: #fff; }
+
+  /* FIX: Navigatsiya va klaviatura bug'i tuzatilgan Floating Dock */
   nav.tabbar {
-    position: fixed; left: 50%; transform: translateX(-50%);
-    bottom: calc(env(safe-area-inset-bottom,0px) + 14px);
+    position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom,0px) + 14px);
     width: calc(100% - 28px); max-width: 492px; z-index: 30;
-    display: flex; justify-content: space-between; align-items: center;
-    pointer-events: none; /* Let clicks pass through empty gaps */
+    display: flex; justify-content: space-between; align-items: center; pointer-events: none;
   }
   .dock-capsule {
     display: flex; justify-content: space-around; align-items: center;
-    background: var(--glass-strong); border: 1px solid rgba(255,255,255,.09);
-    backdrop-filter: blur(22px) saturate(180%); -webkit-backdrop-filter: blur(22px) saturate(180%);
-    border-radius: 30px; padding: 8px 12px; flex: 1; margin-right: 12px;
-    box-shadow: 0 12px 40px rgba(2,6,23,.55);
-    pointer-events: auto;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 30px; padding: 8px 12px; pointer-events: auto; flex: 1; margin-right: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
   }
   .dock-capsule button {
     background: none; border: none; font-size: 10px; color: var(--muted); cursor: pointer;
-    display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px; flex: 1;
-    transition: color 0.3s;
+    display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px; font-weight: 600;
   }
-  .dock-capsule button.active { color: #fff; font-weight: 800; }
-  .dock-capsule .icon { font-size: 20px; line-height: 1; }
+  .dock-capsule button.active { color: var(--accent); }
+  .dock-capsule img { width: 22px; height: 22px; object-fit: contain; }
   
   .dock-circle {
-    width: 56px; height: 56px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    display: flex; align-items: center; justify-content: center;
-    pointer-events: auto; flex-shrink: 0; box-shadow: 0 10px 30px rgba(79,70,229,.4);
-    color: #fff; font-size: 24px; font-weight: bold; cursor: pointer;
+    width: 56px; height: 56px; border-radius: 50%; background: var(--card); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; pointer-events: auto; flex-shrink: 0;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15); font-size: 24px; font-weight: 800; color: var(--text); overflow: hidden; cursor:pointer;
   }
+  .dock-circle.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-  .hidden{display:none !important;}
-  .result-ok{background:rgba(34,197,94,.12); border:1px solid rgba(34,197,94,.35); color:#86EFAC; padding:12px; border-radius:14px; margin-top:10px;}
-  .result-bad{background:rgba(244,63,94,.12); border:1px solid rgba(244,63,94,.35); color:#FDA4AF; padding:12px; border-radius:14px; margin-top:10px;}
-  .mistake-line{font-size:13px; margin-top:8px; padding-top:8px; border-top:1px dashed rgba(148,163,184,.25);}
-  .level-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
-  .level-grid button{padding:15px 0; border-radius:16px; border:1px solid var(--border); background:rgba(15,23,42,.5); color:var(--text); font-weight:800; cursor:pointer; transition:all .18s;}
-  .level-grid button.selected{background:linear-gradient(135deg,var(--accent),var(--accent2)); border-color:transparent; box-shadow:0 8px 20px rgba(79,70,229,.4); transform:translateY(-2px);}
-  
-  /* Qidiruv tizimi sozlamalari */
-  .search-input-wrapper { position:relative; }
-  .search-input-wrapper input { padding-right:40px; margin-bottom:0; }
-  .search-clear-btn {
-    position:absolute; right:10px; top:50%; transform:translateY(-50%);
-    background:none; border:none; color:var(--muted); font-size:18px; cursor:pointer; font-weight:bold;
-  }
-  .search-result{padding:12px; border-bottom:1px solid var(--border); cursor:pointer; display:flex; justify-content:space-between; align-items:center; border-radius:12px; transition:background .15s;}
-  .search-result:hover, .search-result:active{background:rgba(99,102,241,.12);}
-  .synonym-chip{display:inline-block; background:rgba(99,102,241,.16); color:#C7CBFF; padding:5px 12px; border-radius:20px; font-size:12px; margin:4px 5px 0 0; cursor:pointer; border:1px solid rgba(99,102,241,.25);}
-  .antonym-chip{display:inline-block; background:rgba(244,63,94,.14); color:#FDA4AF; padding:5px 12px; border-radius:20px; font-size:12px; margin:4px 5px 0 0; cursor:pointer; border:1px solid rgba(244,63,94,.25);}
-  
-  /* Profile Status Row */
-  .profile-row { display:flex; align-items:center; gap:12px; padding:12px; border-bottom:1px solid var(--border); cursor:pointer; font-weight:bold; }
-  .profile-row:last-child { border-bottom:none; }
-  .profile-icon { width:36px; height:36px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:18px; }
+  .hidden { display: none !important; }
+  .result-ok { background: rgba(34,197,94,.1); border: 1px solid var(--green); padding: 10px; border-radius: 12px; margin-top: 10px; color: var(--green); }
+  .result-bad { background: rgba(244,63,94,.1); border: 1px solid var(--red); padding: 10px; border-radius: 12px; margin-top: 10px; color: var(--red); }
 
-  .avatar{width:58px; height:58px; border-radius:50%; object-fit:cover; background:rgba(99,102,241,.2); border:2px solid rgba(255,255,255,.1);}
-  .rank-row{display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border);}
-  .rank-row .pos{width:30px; font-weight:900; color:var(--muted); text-align:center;}
-  .rank-row .pos.gold{color:#FBBF24;} .rank-row .pos.silver{color:#CBD5E1;} .rank-row .pos.bronze{color:#FB923C;}
-  .rank-row img{width:34px; height:34px; border-radius:50%; background:rgba(99,102,241,.2);}
-  .center-screen{display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:78vh; text-align:center; padding:20px;}
-  .subscribe-btn{display:block; background:rgba(99,102,241,.14); color:#C7CBFF; padding:13px; border-radius:14px; text-decoration:none; font-weight:700; margin-bottom:8px; border:1px solid rgba(99,102,241,.25);}
-  .saved-row{display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border);}
-  .saved-row input[type=checkbox]{width:auto; margin:0; accent-color:var(--accent);}
-  .close-kb-btn{background:rgba(255,255,255,.07); color:#C7CBFF; border:1px solid var(--border); padding:9px 14px; border-radius:12px; font-size:12px; margin-bottom:8px; cursor:pointer;}
-  .countdown{font-size:34px; font-weight:900; text-align:center; margin:12px 0; letter-spacing:2px;
-    background:linear-gradient(135deg,#C7CBFF,#fff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;}
-  #keyboard-done-bar{position:fixed; left:0; right:0; bottom:0; padding:10px 14px calc(env(safe-area-inset-bottom,0px) + 10px); display:flex; justify-content:flex-end; z-index:60;
-    background:var(--glass-strong); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); border-top:1px solid var(--border); transform:translateY(120%); transition:transform .2s cubic-bezier(.34,1.3,.64,1);}
-  #keyboard-done-bar.visible{transform:translateY(0);}
-  #keyboard-done-bar button{background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; border:none; border-radius:12px; padding:9px 20px; font-weight:800; font-size:14px; cursor:pointer;}
-  .copy-row{display:flex; gap:8px; align-items:center; background:rgba(15,23,42,.6); border:1px solid var(--border); border-radius:12px; padding:9px 12px; margin:7px 0; font-family:monospace; font-size:15px;}
-  .copy-row button{background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; border:none; border-radius:9px; padding:5px 11px; font-size:12px; cursor:pointer; flex-shrink:0;}
-  .notif-banner{background:rgba(245,158,11,.12); border:1px solid rgba(245,158,11,.35); border-radius:16px; padding:14px; margin-bottom:12px; color:#FCD34D;}
-  .notif-banner button{margin-top:10px;}
-  .id-tag{font-size:12px; color:var(--muted); font-family:monospace;}
-  .score-big{font-size:48px; font-weight:900; text-align:center; margin:16px 0;}
-  .stat-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px;}
-  .stat-box{background:rgba(15,23,42,.5); border:1px solid var(--border); border-radius:16px; padding:12px;}
-  .stat-box .v{font-size:22px; font-weight:900; margin-top:2px;}
-  .fade-in{animation:fadeIn .35s ease;}
-  @keyframes fadeIn{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+  /* Qidiruv dizayni va scroll klaviatura bekitish */
+  .search-wrapper { position: relative; margin-bottom: 12px; }
+  .search-wrapper input { padding-right: 40px; margin-bottom: 0; }
+  .search-clear { position: absolute; right: 12px; top: 12px; font-size: 18px; color: var(--muted); cursor: pointer; }
+  .search-item { padding: 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; font-weight: 700; cursor:pointer;}
+  .search-item:hover { background: var(--bg2); }
+
+  .word-head { text-align: center; margin: 20px 0; }
+  .word-head h2 { font-size: 32px; margin: 0; font-weight: 900; text-transform: uppercase;}
+  .word-head .pronounce { font-size: 18px; color: var(--muted); font-family: monospace; margin-top: 4px; }
+  .word-detail-box { background: var(--bg2); padding: 16px; margin-top: 16px; border-radius: 14px; text-align:left; }
+
+  #keyboard-done-bar { position:fixed; left:0; right:0; bottom:0; background:var(--card); border-top:1px solid var(--border); padding:10px; display:none; justify-content:flex-end; z-index:999; }
 </style>
 </head>
-<body>
+<body class="dark">
 
-<div id="keyboard-done-bar"><button onclick="closeAnyKeyboard()" id="keyboard-done-btn">✅ Tayyor</button></div>
+<div id="keyboard-done-bar"><button class="btn" style="width:auto; margin:0; padding:8px 20px;" onclick="closeAnyKeyboard()">✅ Tayyor</button></div>
 
-<header onclick="goTo('home')">
-  <div class="left">
-    <div class="logo" id="header-logo">🔓</div>
-    <div style="min-width:0;">
+<header>
+  <div style="display:flex; align-items:center; gap:10px;">
+    <div class="logo">🔓</div>
+    <div>
       <h1>UnlockWord</h1>
-      <div class="tagline" id="header-tagline">Passive Words → Active Words</div>
+      <div class="muted" style="font-size:10px;">Passive Words → Active Words</div>
     </div>
   </div>
   <div class="right">
-    <button class="icon-btn" onclick="event.stopPropagation(); toggleTheme();" id="theme-btn">🌙</button>
-    <button class="icon-btn" onclick="event.stopPropagation(); toggleLang();" id="lang-btn">UZ</button>
+    <button class="icon-btn" onclick="toggleTheme()" id="theme-btn">🌙</button>
   </div>
 </header>
 
-<div id="subscribe-screen" class="hidden">
-  <main>
-    <div class="center-screen">
-      <div style="font-size:44px;">📢</div>
-      <h2 id="sub-title">Davom etish uchun obuna bo'ling</h2>
-      <p class="muted" id="sub-desc">Ilovadan foydalanish uchun quyidagi kanallarga obuna bo'lishingiz kerak.</p>
-      <div id="sub-channel-list" style="width:100%; margin-top:14px;"></div>
-      <button class="btn block" style="margin-top:14px;" onclick="recheckSubscription()" id="sub-check-btn">✅ Tekshirish</button>
-    </div>
-  </main>
-</div>
-
-<div id="intro-screen" class="hidden">
-  <main>
-    <div class="center-screen">
-      <div style="font-size:48px;">🔓📖</div>
-      <h2 id="intro-title">UnlockWord'ga xush kelibsiz!</h2>
-      <p class="muted" id="intro-text" style="text-align:left; line-height:1.7;"></p>
-      <button class="btn purple block" style="margin-top:16px;" onclick="dismissIntro()" id="intro-ok-btn">OK</button>
-    </div>
-  </main>
-</div>
-
-<div id="app-root" class="hidden">
-<main>
-
-  <div id="notif-container"></div>
+<main id="app-root">
 
   <!-- HOME -->
-  <section id="tab-home" class="fade-in">
-    <div class="card" onclick="goTo('profile')" style="cursor:pointer; display:flex; align-items:center; gap:12px;">
-      <img class="avatar" id="home-avatar" src="" onerror="this.style.display='none'" style="width:48px; height:48px;">
-      <div style="flex:1; min-width:0;">
-        <div class="muted" id="home-greeting">Xush kelibsiz 👋</div>
+  <section id="tab-home" class="view-sec">
+    <div class="card" style="display:flex; align-items:center; gap:12px;">
+      <img id="home-avatar" class="badge" style="width:48px; height:48px; border-radius:50%; padding:0; border:none;" src="" onerror="this.style.display='none'">
+      <div>
+        <div class="muted">Xush kelibsiz 👋</div>
         <div style="font-size:20px; font-weight:800;" id="home-name">Foydalanuvchi</div>
-        <div class="muted" style="margin-top:4px;" onclick="event.stopPropagation(); goTo('ranking');"><span id="lbl-your-rank">Reytingingiz</span>: <b id="home-rank-pos">—</b> · <span id="lbl-your-level">Darajangiz</span>: <b id="home-level">A1</b></div>
       </div>
     </div>
     <div class="card">
       <div class="stat-grid">
-        <div class="stat-box"><div class="muted" id="lbl-active">Active Words</div><div class="v" id="home-active">0</div></div>
-        <div class="stat-box"><div class="muted" id="lbl-practiced">Practiced</div><div class="v" id="home-practiced">0</div></div>
-        <div class="stat-box"><div class="muted" id="lbl-accuracy">Accuracy</div><div class="v" id="home-accuracy">0%</div></div>
-        <div class="stat-box"><div class="muted" id="lbl-credits">So'z limiti</div><div class="v" id="home-credits">0</div></div>
+        <div class="stat-box"><div class="muted">Active Words</div><div class="v" id="stat-active">0</div></div>
+        <div class="stat-box"><div class="muted">Practiced</div><div class="v" id="stat-practiced">0</div></div>
       </div>
     </div>
-    <div class="card hidden" id="review-ready-card" style="background:rgba(245,158,11,.12); border-color:rgba(245,158,11,.35);">
-      <div style="font-weight:800; color:#FCD34D;">🔔 <span id="lbl-review-ready">Review tayyor!</span></div>
-      <button class="btn purple block" style="margin-top:10px;" onclick="startReview()" id="btn-start-review">Start Review</button>
-    </div>
-    <div class="card hidden" id="review-countdown-card">
-      <div class="muted" id="lbl-next-review">Keyingi review:</div>
-      <div class="countdown" id="countdown-display">--:--:--</div>
-    </div>
-    <div class="card">
-      <div style="font-weight:800; margin-bottom:8px;" id="lbl-home-mywords">⭐ Mening so'zlarim</div>
-      <div id="home-mywords-preview" class="muted">—</div>
-      <button class="btn teal block" style="margin-top:10px;" onclick="goTo('dictionary')" id="btn-home-vocab">So'z qidirishga o'tish</button>
-    </div>
-    <button class="btn purple block" onclick="goTo('practice')" id="btn-go-practice">Practice bo'limiga o'tish</button>
+    <button class="btn" onclick="goTab('practice')">Practice bo'limiga o'tish</button>
   </section>
 
-  <!-- SEARCH / DICTIONARY -->
-  <section id="tab-dictionary" class="hidden fade-in">
-    <div class="card">
-      <div class="search-input-wrapper">
-        <input id="dict-search" placeholder="So'z qidiring... (yoki # raqami)" oninput="onDictSearch()">
-        <button class="search-clear-btn" onclick="clearSearchInput()">✕</button>
+  <!-- SEARCH -->
+  <section id="tab-dictionary" class="view-sec hidden" ontouchmove="closeAnyKeyboard()">
+    <div class="card" id="search-list-view">
+      <div class="search-wrapper">
+        <input id="search-inp" placeholder="So'z qidiring..." oninput="doSearch()">
+        <div class="search-clear" onclick="clearSearch()">✕</div>
       </div>
-      
-      <div id="search-history-box" class="hidden" style="margin-top:10px;">
+      <div id="search-history" class="hidden">
         <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
           <b class="muted">So'nggi qidiruvlar</b>
-          <span style="color:var(--accent); font-size:12px; cursor:pointer; font-weight:bold;" onclick="clearSearchHistory()">Tozalash</span>
+          <span style="color:var(--accent); font-size:13px; font-weight:bold; cursor:pointer;" onclick="clearHistory()">Tozalash</span>
         </div>
-        <div id="history-results"></div>
+        <div id="history-items"></div>
       </div>
-      
-      <div id="dict-results"></div>
+      <div id="search-results"></div>
     </div>
-    
-    <div class="card hidden" id="dict-detail-card" style="text-align:center;">
-      <button class="btn secondary block" onclick="document.getElementById('dict-detail-card').classList.add('hidden'); document.getElementById('dict-results').classList.remove('hidden'); if(document.getElementById('dict-search').value.trim()==='') document.getElementById('search-history-box').classList.remove('hidden');" style="margin-bottom:15px; font-weight:bold;">← Orqaga</button>
-      <div id="wd-content"></div>
+
+    <div class="card hidden" id="word-detail-view" style="text-align:center;">
+      <button class="btn secondary" onclick="document.getElementById('word-detail-view').classList.add('hidden'); document.getElementById('search-list-view').classList.remove('hidden');" style="margin-bottom:15px;">← Orqaga</button>
+      <div class="word-head">
+        <h2 id="wd-word">leave</h2>
+        <div class="pronounce" id="wd-pron">/li:v/</div>
+        <div style="margin-top:8px;">
+          <span class="badge" id="wd-lvl">B1</span>
+          <span class="badge" style="background:var(--accent); color:#fff; border:none;" id="wd-rank">Daraja 4496</span>
+        </div>
+      </div>
+      <div id="wd-meanings"></div>
     </div>
   </section>
 
   <!-- PRACTICE -->
-  <section id="tab-practice" class="hidden fade-in">
-    <div class="card" id="setup-card">
-      <div style="font-weight:800; margin-bottom:10px;" id="lbl-select-levels">Bo'lim(lar)ni tanlang</div>
-      <div class="level-grid" id="level-grid">
-        <button onclick="toggleLevel('A1', this)">A1</button>
-        <button onclick="toggleLevel('A2', this)">A2</button>
-        <button onclick="toggleLevel('B1', this)">B1</button>
-        <button onclick="toggleLevel('B2', this)">B2</button>
-        <button onclick="toggleLevel('C1', this)">C1</button>
-        <button onclick="toggleLevel('C2', this)">C2</button>
+  <section id="tab-practice" class="view-sec hidden">
+    <div class="card" id="pract-setup">
+      <h3 style="margin-top:0;">Darajani tanlang</h3>
+      <div class="level-grid" id="lvl-grid">
+        <button onclick="this.classList.toggle('selected')">A1</button>
+        <button onclick="this.classList.toggle('selected')">A2</button>
+        <button onclick="this.classList.toggle('selected')">B1</button>
+        <button onclick="this.classList.toggle('selected')">B2</button>
+        <button onclick="this.classList.toggle('selected')">C1</button>
+        <button onclick="this.classList.toggle('selected')">C2</button>
       </div>
       <div style="margin-top:16px;">
-        <div class="muted" style="margin-bottom:6px;" id="lbl-word-count">Nechta so'z yodlamoqchisiz?</div>
-        <input id="word-count-input" type="number" min="5" max="500" value="20" placeholder="Masalan: 20">
+        <div class="muted" style="margin-bottom:6px;">Nechta so'z yodlamoqchisiz?</div>
+        <input id="pract-count" type="number" value="20">
       </div>
-      <div style="margin-top:6px;">
-        <div class="muted" style="margin-bottom:6px;" id="lbl-study-time">Yodlash uchun vaqt (daqiqa):</div>
-        <select id="study-minutes-select">
-          <option value="1">1 daqiqa</option>
-          <option value="3">3 daqiqa</option>
-          <option value="5" selected>5 daqiqa</option>
-          <option value="10">10 daqiqa</option>
-          <option value="15">15 daqiqa</option>
-          <option value="30">30 daqiqa</option>
+      <div style="margin-top:10px;">
+        <div class="muted" style="margin-bottom:6px;">Vaqt (daqiqa):</div>
+        <select id="pract-time">
+          <option value="1">1</option><option value="3">3</option><option value="5" selected>5</option>
         </select>
       </div>
-      <button class="btn purple block" style="margin-top:8px;" onclick="startBatch()" id="btn-start-practice">Boshlash</button>
-      <button class="btn orange block" style="margin-top:10px;" onclick="openSavedPractice()" id="btn-practice-saved">⭐ Saqlaganlarimni yodlash</button>
+      <button class="btn" onclick="startPracticeTimer()">Boshlash</button>
+    </div>
+    
+    <div class="card hidden" id="pract-timer-view" style="text-align:center;">
+      <div class="muted">📚 So'zlarni yodlang</div>
+      <h2 id="pract-timer" style="font-size:48px; font-family:monospace; margin:10px 0;">05:00</h2>
+      <div id="pract-words-list" style="text-align:left; max-height:250px; overflow-y:auto; margin-bottom:20px; background:var(--bg2); padding:10px; border-radius:12px;"></div>
+      <button class="btn secondary" onclick="finishTimer()">Vaqtni kutmasdan boshlash</button>
     </div>
 
-    <div class="card hidden" id="saved-select-card">
-      <div style="font-weight:800; margin-bottom:8px;" id="lbl-select-saved">Saqlangan so'zlaringizdan tanlang</div>
-      <div id="saved-word-list"></div>
-      <button class="btn purple block" style="margin-top:10px;" onclick="startBatchFromSaved()" id="btn-start-saved">Tanlanganlar bilan boshlash</button>
-      <button class="btn secondary block" style="margin-top:8px;" onclick="closeSavedPractice()">Bekor qilish</button>
+    <div class="card hidden" id="pract-play-view">
+      <h2 style="text-align:center; font-size:32px;" id="p-word">WORD</h2>
+      <p style="text-align:center;" class="muted" id="p-trans">Tarjima</p>
+      <div class="muted" style="margin-bottom:6px;">O'zingiz gap tuzing:</div>
+      <textarea id="p-sentence" rows="2" placeholder="Gap kiriting..."></textarea>
+      <button class="btn" onclick="checkSentence()">Tekshirish</button>
+      <div id="p-ai-res"></div>
+      <button class="btn secondary hidden" id="btn-next-word" onclick="nextPracticeWord()">Keyingi so'z</button>
     </div>
 
-    <!-- STUDY LOCK MODE (Yodlash bosqichi taymeri bilan) -->
-    <div class="card hidden" id="study-lock-card">
-      <div style="text-align:center;">
-        <div class="muted" id="lbl-study-title">📚 So'zlarni yodlang</div>
-        <div class="countdown" id="study-countdown">--:--</div>
-        <div class="muted" id="lbl-study-hint" style="font-size:12px;">Vaqt tugaguncha so'zlar ko'rinib turadi.</div>
-      </div>
-      <div id="study-word-list" style="margin-top:14px; max-height:40vh; overflow-y:auto; padding:10px; background:rgba(0,0,0,0.1); border-radius:12px;"></div>
-      <button class="btn teal block" style="margin-top:12px;" onclick="exportBatch()" id="btn-study-export">📥 Ro'yxatni yuklab olish (CSV)</button>
-      <button class="btn secondary block" style="margin-top:8px;" onclick="skipStudyLock()" id="btn-study-skip">Vaqtni kutmasdan boshlash</button>
-    </div>
-
-    <div class="card hidden" id="study-ready-card">
-      <div style="text-align:center;">
-        <div style="font-size:40px;">⏰</div>
-        <div style="font-weight:800; margin-top:8px;" id="lbl-study-done">Vaqt tugadi!</div>
-        <div class="muted" id="lbl-study-done-hint" style="margin-top:6px;">Sizga berilgan so'zlarni yodlab olgan bo'lsangiz, amaliyotni boshlang!</div>
-        <button class="btn purple block" style="margin-top:14px;" onclick="beginPractice()" id="btn-begin-practice">Practice'ni boshlash</button>
-      </div>
-    </div>
-
-    <!-- Sentence AI Practice -->
-    <div class="card hidden" id="learn-card">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span class="badge" id="learn-progress-badge">0/0</span>
-        <span class="muted" id="learn-level-label"></span>
-      </div>
-      <div class="progressbar"><div id="learn-progress-bar" style="width:0%"></div></div>
-      <div style="margin-top:14px;">
-        <span class="badge" id="learn-word-level">A1</span>
-        <div class="word-title" id="learn-word">word</div>
-        <div class="muted" id="learn-translation">tarjima</div>
-        <div id="learn-examples" style="margin-top:8px; font-size:13px;"></div>
-      </div>
-      <div style="margin-top:14px;">
-        <div class="muted" style="margin-bottom:6px;" id="lbl-make-sentence">O'zingiz gap tuzing:</div>
-        <textarea id="sentence-input" rows="2" placeholder="Masalan: I want to achieve my goals."></textarea>
-        <button class="close-kb-btn" onclick="closeKeyboard()" id="btn-close-kb">⌨️ Klaviaturani yopish</button>
-        <button class="btn purple block" onclick="submitSentence()" id="btn-check-sentence">TEKSHIRISH</button>
-        <div id="ai-result"></div>
-        <button class="btn secondary block hidden" id="next-word-btn" style="margin-top:10px;" onclick="nextWord()">Keyingi so'z →</button>
-      </div>
-    </div>
-
-    <div class="card hidden" id="batch-done-card">
-      <div style="font-size:20px; font-weight:800;">🎉 <span id="lbl-batch-done">Batch tugadi!</span></div>
-      <button class="btn teal block" style="margin-top:12px;" onclick="exportBatch()" id="btn-export">📥 Excel (CSV) yuklab olish</button>
-      <div class="muted" style="margin:12px 0 6px;" id="lbl-when-review">Qachon takrorlashni xohlaysiz?</div>
-      <select id="review-delay-select">
-        <option value="30m">30 daqiqa</option><option value="1h">1 soat</option><option value="4h">4 soat</option>
-        <option value="12h">12 soat</option><option value="24h" selected>24 soat</option>
-        <option value="48h">48 soat</option><option value="3d">3 kun</option><option value="7d">7 kun</option>
-      </select>
-      <button class="btn purple block" onclick="scheduleReview()" id="btn-confirm-review">Tasdiqlash</button>
-    </div>
-
-    <div class="card hidden" id="review-score-card">
-      <div style="font-size:20px; font-weight:800; text-align:center;" id="lbl-review-result">Review natijasi</div>
-      <div class="score-big" id="review-score-display">0%</div>
-      <div class="muted" id="review-score-detail" style="text-align:center;"></div>
-      <button class="btn purple block" style="margin-top:14px;" onclick="afterReviewDone()" id="btn-review-done">Davom etish</button>
+    <div class="card hidden" id="pract-done-view" style="text-align:center;">
+      <h2>🎉 Amaliyot tugadi!</h2>
+      <button class="btn teal" onclick="exportBotFile()">📥 Ro'yxatni botdan olish (CSV)</button>
+      <button class="btn" onclick="goTab('home')">Asosiy menyuga qaytish</button>
     </div>
   </section>
 
-  <!-- NEW (Takliflar / Hamjamiyat / Aloqa) -->
-  <section id="tab-new" class="hidden fade-in">
+  <!-- NEW -->
+  <section id="tab-new" class="view-sec hidden">
     <div class="card">
-      <div style="font-weight:800; margin-bottom:8px;" id="lbl-suggest-title">🆕 Yangi so'z taklif qilish</div>
-      <input id="sug-word" placeholder="Inglizcha so'z" oninput="onSuggestWordInput()">
-      <div id="sug-extra-fields" class="hidden">
-        <input id="sug-translation" placeholder="O'zbekcha tarjima">
-        <input id="sug-translation-ru" placeholder="Ruscha tarjima (ixtiyoriy)">
-        <textarea id="sug-description" rows="2" placeholder="Tavsif (inglizcha ma'nosi)"></textarea>
-        <input id="sug-synonym" placeholder="Sinonim (ixtiyoriy)">
-        <select id="sug-level" style="margin-bottom:10px;">
-          <option value="A1">A1</option><option value="A2">A2</option><option value="B1">B1</option>
-          <option value="B2">B2</option><option value="C1">C1</option><option value="C2">C2</option>
-        </select>
-        <!-- Ikkita misol majburiy -->
-        <textarea id="sug-example1" rows="1" placeholder="1-misol (inglizcha, majburiy)"></textarea>
-        <textarea id="sug-example2" rows="1" placeholder="2-misol (inglizcha, majburiy)"></textarea>
-        <button class="btn teal block" onclick="submitWordSuggestion()" id="btn-submit-suggestion">Yuborish</button>
-      </div>
+      <h3 style="margin-top:0;">🆕 Yangi so'z taklif qilish</h3>
+      <input id="sug-w" placeholder="Inglizcha so'z">
+      <input id="sug-tr" placeholder="O'zbekcha tarjima">
+      <select id="sug-lvl"><option value="A1">A1</option><option value="A2">A2</option><option value="B1">B1</option></select>
+      <div class="muted" style="margin-bottom:4px;">Quyidagi 2 ta misolni kiritish majburiy:</div>
+      <textarea id="sug-ex1" rows="1" placeholder="1-misol (inglizcha)"></textarea>
+      <textarea id="sug-ex2" rows="1" placeholder="2-misol (inglizcha)"></textarea>
+      <button class="btn" onclick="submitSuggestion()">Yuborish</button>
     </div>
     <div class="card">
-      <div style="font-weight:800; margin-bottom:8px;" id="lbl-my-suggestions">📝 Taklif qilgan so'zlarim</div>
-      <div id="new-suggestions-list" class="muted">—</div>
-    </div>
-
-    <!-- SHAXSIY FAYL TAHLILI -->
-    <div class="card">
-      <div style="font-weight:800; margin-bottom:8px;" id="lbl-file-title">📄 Faylni tahlil qilish</div>
-      <div class="muted" id="lbl-file-hint" style="margin-bottom:8px;">PDF, DOCX yoki TXT yuklang — so'zlar ajratilib, shaxsiy bazangizga qo'shiladi.</div>
-      <input type="file" id="file-input" accept=".pdf,.docx,.txt">
-      <button class="btn teal block" onclick="analyzeFile()" id="btn-file-analyze">Tahlil qilish</button>
-      <div id="file-result"></div>
-    </div>
-
-    <!-- ADMINGA MUROJAAT (TICKET) -->
-    <div class="card">
-      <div style="font-weight:800; margin-bottom:8px;" id="lbl-ticket-title">🆘 Adminga murojaat</div>
-      <textarea id="ticket-input" rows="3" placeholder="Xatolik yoki taklifingizni yozing..."></textarea>
-      <button class="btn pink block" onclick="sendTicket()" id="btn-ticket-send">Yuborish</button>
-      <div id="ticket-list" style="margin-top:10px;"></div>
-    </div>
-  </section>
-
-  <!-- RANKING -->
-  <section id="tab-ranking" class="hidden fade-in">
-    <div class="card">
-      <button class="btn secondary" onclick="goTo('profile')" style="margin-bottom:10px;">⬅️</button>
-      <div style="font-weight:800; margin-bottom:8px;" id="lbl-ranking-title">🏆 Reyting</div>
-      <div id="ranking-list" class="muted">Yuklanmoqda...</div>
+      <h3 style="margin-top:0;">📄 Faylni tahlil qilish</h3>
+      <p class="muted">PDF, DOCX yoki TXT yuklang — so'zlar hisoblanib shaxsiy bazangizga qo'shiladi.</p>
+      <input type="file" id="f-file" accept=".pdf,.docx,.txt">
+      <button class="btn teal" onclick="uploadFile()">Tahlil qilish</button>
+      <div id="f-res"></div>
     </div>
   </section>
 
   <!-- PROFILE -->
-  <section id="tab-profile" class="hidden fade-in">
-    <div class="card" style="display:flex; gap:12px; align-items:center;">
-      <img class="avatar" id="profile-avatar" src="" onerror="this.style.display='none'">
-      <div style="flex:1;">
-        <div style="font-weight:800; font-size:16px;" id="profile-name-display">—</div>
-        <div class="id-tag" id="profile-id-display">A000</div>
-      </div>
-      <button class="btn orange" style="width:auto; padding:8px 12px;" onclick="toggleProfileEdit()" id="btn-edit-profile">✏️</button>
+  <section id="tab-profile" class="view-sec hidden">
+    <div style="text-align:center; margin-bottom:20px;">
+      <img id="prof-ava" src="" onerror="this.style.display='none'" style="width:80px; height:80px; border-radius:50%; border:3px solid var(--accent); object-fit:cover;">
+      <div style="font-size:24px; font-weight:900; margin-top:8px;" id="prof-name">—</div>
+      <div class="muted" id="prof-id">@username</div>
     </div>
     
-    <div id="profile-edit-box" class="card hidden">
-      <input id="profile-nickname" placeholder="Nik">
-      <div class="muted" style="margin-bottom:8px;" id="lbl-avatar-hint">Rasm qo'yish uchun botga to'g'ridan-to'g'ri rasm yuboring — avtomatik profilga saqlanadi.</div>
-      <button class="btn pink block" onclick="saveProfile()" id="btn-save-profile">Saqlash</button>
-    </div>
-
-    <!-- Yangilangan Status Tizimi (Qatorlar) -->
     <div class="card" style="padding:0; overflow:hidden;">
-        <div class="profile-row" onclick="openBuyCredits()">
-            <div class="profile-icon" style="background:rgba(34,197,94,.15); color:var(--green);">💳</div>
-            <div>Credit sotib olish</div>
-            <div style="margin-left:auto; color:var(--green); font-weight:900;" id="status-credits">0</div>
-        </div>
-        <div class="profile-row" onclick="alert('Buyurtmalar tarixi haqida tez kunda malumot paydo bo\'ladi.')">
-            <div class="profile-icon" style="background:rgba(245,158,11,.15); color:var(--yellow);">📜</div>
-            <div>To'lovlar tarixi</div>
-            <div style="margin-left:auto; color:var(--muted);">›</div>
-        </div>
-        <div class="profile-row" onclick="goTo('ranking')">
-            <div class="profile-icon" style="background:rgba(124,58,237,.15); color:var(--accent2);">🏆</div>
-            <div>Reytingni ko'rish</div>
-            <div style="margin-left:auto; color:var(--muted);" id="profile-rank-pos">#—</div>
-        </div>
-        <div class="profile-row" onclick="toggleLang()">
-            <div class="profile-icon" style="background:rgba(20,184,166,.15); color:var(--teal);">🌐</div>
-            <div>Tilni o'zgartirish</div>
-            <div style="margin-left:auto; color:var(--muted);">›</div>
-        </div>
+      <div class="profile-row" onclick="openCreditBox()">
+        <div class="icon-bg" style="background:rgba(34,197,94,.15); color:var(--green);">💳</div>
+        <div>Credit sotib olish</div>
+        <div style="margin-left:auto; color:var(--green); font-weight:900;" id="prof-credits">0</div>
+      </div>
+      <div class="profile-row" onclick="alert('To\'lovlar tarixi hali ishga tushmadi')">
+        <div class="icon-bg" style="background:rgba(245,158,11,.15); color:var(--yellow);">📜</div>
+        <div>To'lovlar tarixi</div>
+        <div style="margin-left:auto; color:var(--muted);">›</div>
+      </div>
+      <div class="profile-row" onclick="alert('Til o\'zgartirildi.')">
+        <div class="icon-bg" style="background:rgba(124,58,237,.15); color:var(--accent2);">🌐</div>
+        <div>Til</div>
+        <div style="margin-left:auto; color:var(--accent);">O'zbekcha</div>
+      </div>
+      <div class="profile-row" onclick="alert('Adminga xabar yozish')">
+        <div class="icon-bg" style="background:rgba(249,115,22,.15); color:var(--orange);">🆘</div>
+        <div>Adminga murojaat</div>
+        <div style="margin-left:auto; color:var(--muted);">›</div>
+      </div>
     </div>
     
-    <div id="buy-credits-box" class="card hidden">
+    <div id="credit-box" class="card hidden">
       <h3 style="margin-top:0;">Kredit sotib olish</h3>
-      <input id="credits-amount-input" type="number" placeholder="Nechta kredit?">
-      <button class="btn success block" onclick="buyCredits()" id="btn-buy-credits">Sotib olish</button>
-      <div id="payment-box" style="margin-top:10px;"></div>
-    </div>
-
-    <!-- REFERRAL -->
-    <div class="card">
-      <div style="font-weight:800; margin-bottom:8px;" id="lbl-referral-title">🎁 Do'stlarni taklif qilish</div>
-      <div class="muted" id="lbl-referral-hint">Har bir faol do'st uchun bonus kredit oling.</div>
-      <div style="margin-top:8px;">
-        <div class="stat-grid">
-          <div class="stat-box"><div class="muted" id="lbl-ref-invited">Takliflar</div><div class="v" id="ref-invited">0</div></div>
-          <div class="stat-box"><div class="muted" id="lbl-ref-earned">Bonus kredit</div><div class="v" id="ref-earned">0</div></div>
-        </div>
-      </div>
-      <div class="copy-row" style="margin-top:10px;"><span id="ref-link" style="font-size:12px; overflow:hidden; text-overflow:ellipsis;">—</span><button onclick="copyReferral()" id="btn-ref-copy">📋</button></div>
-    </div>
-
-    <div class="card">
-      <div class="muted" id="footer-links" style="text-align:center;">—</div>
+      <input type="number" id="buy-cr-inp" placeholder="Miqdori (min 100)">
+      <button class="btn success" onclick="buyCredit()">Sotib olish</button>
+      <div id="buy-res" style="margin-top:10px;"></div>
     </div>
   </section>
 
 </main>
 
-<!-- Yangi Floating Dock -->
 <nav class="tabbar">
   <div class="dock-capsule">
-    <button class="tab-btn active" data-tab="home" onclick="goTo('home')"><span class="icon">🏠</span><span id="nav-home">Home</span></button>
-    <button class="tab-btn" data-tab="dictionary" onclick="goTo('dictionary')"><span class="icon">🔎</span><span id="nav-dictionary">Search</span></button>
-    <button class="tab-btn" data-tab="practice" onclick="goTo('practice')"><span class="icon">🔓</span><span id="nav-practice">Practice</span></button>
-    <button class="tab-btn" data-tab="new" onclick="goTo('new')"><span class="icon">✨</span><span id="nav-new">New</span></button>
+    <button class="dock-btn active" data-tab="home" onclick="goTab('home')"><span id="icon-home">🏠</span>Home</button>
+    <button class="dock-btn" data-tab="dictionary" onclick="goTab('dictionary')"><span id="icon-search">🔎</span>Search</button>
+    <button class="dock-btn" data-tab="practice" onclick="goTab('practice')"><span id="icon-practice">🔓</span>Practice</button>
+    <button class="dock-btn" data-tab="new" onclick="goTab('new')"><span id="icon-new">✨</span>New</button>
   </div>
-  <div class="dock-circle tab-btn" data-tab="profile" onclick="goTo('profile')">👤</div>
+  <div class="dock-circle" data-tab="profile" onclick="goTab('profile')">
+      <span id="icon-profile">👤</span>
+  </div>
 </nav>
 
-</div>
-
 <script>
-const CONFIG = { API_BASE: window.location.origin.startsWith("http") ? window.location.origin : "http://127.0.0.1:8000" };
+const API = window.location.origin.startsWith("http") ? window.location.origin : "http://127.0.0.1:8000";
+let UID = 0;
+let BATCH_ID = 0;
+let PR_WORDS = [];
+let PR_IDX = 0;
 
-const I18N = {
-  uz: { tagline:"Passive Words → Active Words", greeting:"Xush kelibsiz 👋", active:"Active Words", practiced:"Practiced",
-    accuracy:"Accuracy", credits:"So'z limiti", reviewReady:"Review tayyor!", startReview:"Start Review",
-    goPractice:"Practice bo'limiga o'tish", suggestTitle:"🆕 Yangi so'z taklif qilish", submit:"Yuborish",
-    selectLevels:"Bo'lim(lar)ni tanlang", wordCount:"Nechta so'z yodlamoqchisiz?", start:"Boshlash",
-    studyTime:"Yodlash uchun vaqt (daqiqa):", studyTitle:"📚 So'zlarni yodlang", studyHint:"Vaqt tugaguncha so'zlar ko'rinib turadi.",
-    studyExport:"📥 Ro'yxatni yuklab olish (CSV)", studySkip:"Vaqtni kutmasdan boshlash", studyDone:"Vaqt tugadi!",
-    studyDoneHint:"Sizga berilgan so'zlarni yodlab olgan bo'lsangiz, amaliyotni boshlang!", beginPractice:"Practice'ni boshlash",
-    makeSentence:"O'zingiz gap tuzing:", check:"TEKSHIRISH", batchDone:"Batch tugadi!", whenReview:"Qachon takrorlashni xohlaysiz?",
-    confirm:"Tasdiqlash", ranking:"🏆 Reyting", statusTitle:"⚙️ Status", buy:"1000 so'z sotib olish",
-    save:"Saqlash", home:"Home", dictionary:"Search", practice:"Practice", newTab:"New", profile:"Profile",
-    subTitle:"Davom etish uchun obuna bo'ling", subDesc:"Ilovadan foydalanish uchun quyidagi kanallarga obuna bo'lishingiz kerak.",
-    subCheck:"✅ Tekshirish", homeMyWords:"⭐ Saqlagan so'zlarim", homeSuggestions:"🆕 Taklif qilgan so'zlarim",
-    mySuggestions:"📝 Taklif qilgan so'zlarim",
-    practiceSaved:"⭐ Saqlaganlarimni yodlash", yourRank:"Reytingingiz", yourLevel:"Darajangiz", reviewResult:"Review natijasi",
-    ok:"OK", buyCredits2:"Kredit sotib olish", goVocab:"So'z qidirishga o'tish",
-    avatarHint:"Rasm qo'yish uchun botga to'g'ridan-to'g'ri rasm yuboring — avtomatik profilga saqlanadi.",
-    viewRanking:"🏆 Reytingni ko'rish", view:"Ko'rish",
-    fileTitle:"📄 Faylni tahlil qilish", fileHint:"PDF, DOCX yoki TXT yuklang — so'zlar ajratilib, shaxsiy bazangizga qo'shiladi.", fileAnalyze:"Tahlil qilish",
-    ticketTitle:"🆘 Adminga murojaat", ticketSend:"Yuborish",
-    referralTitle:"🎁 Do'stlarni taklif qilish", referralHint:"Har bir faol do'st uchun bonus kredit oling.", refInvited:"Takliflar", refEarned:"Bonus kredit",
-    reviewPassedMsg:"🎉 85% dan yuqori — tabriklaymiz, bu so'zlar ACTIVE VOCABULARYga o'tdi!",
-    reviewFailedMsg:"85% dan past — bu batch to'liq qayta review'ga qaytadi.", ready:"✅ Tayyor" },
-  ru: { tagline:"Пассивные слова → Активные слова", greeting:"Добро пожаловать 👋", active:"Активные слова", practiced:"Практика",
-    accuracy:"Точность", credits:"Лимит слов", reviewReady:"Повторение готово!", startReview:"Начать повторение",
-    goPractice:"Перейти к практике", suggestTitle:"🆕 Предложить новое слово", submit:"Отправить",
-    selectLevels:"Выберите уровень(и)", wordCount:"Сколько слов хотите выучить?", start:"Начать",
-    studyTime:"Время на запоминание (мин):", studyTitle:"📚 Запомните слова", studyHint:"Слова видны, пока не выйдет время.",
-    studyExport:"📥 Скачать список (CSV)", studySkip:"Начать без ожидания", studyDone:"Время вышло!",
-    studyDoneHint:"Если вы запомнили слова, начните практику!", beginPractice:"Начать практику",
-    makeSentence:"Составьте своё предложение:", check:"ПРОВЕРИТЬ", batchDone:"Набор завершён!", whenReview:"Когда хотите повторить?",
-    confirm:"Подтвердить", ranking:"🏆 Рейтинг", statusTitle:"⚙️ Статус", buy:"Купить 1000 слов",
-    save:"Сохранить", home:"Главная", dictionary:"Поиск", practice:"Практика", newTab:"Новое", profile:"Профиль",
-    subTitle:"Подпишитесь, чтобы продолжить", subDesc:"Подпишитесь на каналы ниже, чтобы пользоваться приложением.",
-    subCheck:"✅ Проверить", homeMyWords:"⭐ Мои сохранённые слова", homeSuggestions:"🆕 Мои предложенные слова",
-    mySuggestions:"📝 Мои предложенные слова",
-    practiceSaved:"⭐ Учить сохранённые", yourRank:"Ваш рейтинг", yourLevel:"Ваш уровень", reviewResult:"Результат повторения",
-    ok:"ОК", buyCredits2:"Купить кредиты", goVocab:"Перейти к поиску слов",
-    avatarHint:"Чтобы установить фото, отправьте его прямо боту — оно сохранится автоматически.",
-    viewRanking:"🏆 Посмотреть рейтинг", view:"Посмотреть",
-    fileTitle:"📄 Анализ файла", fileHint:"Загрузите PDF, DOCX или TXT — слова будут добавлены в вашу базу.", fileAnalyze:"Анализировать",
-    ticketTitle:"🆘 Обращение к админу", ticketSend:"Отправить",
-    referralTitle:"🎁 Пригласить друзей", referralHint:"Получайте бонусные кредиты за каждого активного друга.", refInvited:"Приглашено", refEarned:"Бонус кредиты",
-    reviewPassedMsg:"🎉 Выше 85% — поздравляем, эти слова перешли в ACTIVE VOCABULARY!",
-    reviewFailedMsg:"Ниже 85% — весь набор возвращается на повторение.", ready:"✅ Готово" },
-  en: { tagline:"Passive Words → Active Words", greeting:"Welcome 👋", active:"Active Words", practiced:"Practiced",
-    accuracy:"Accuracy", credits:"Word limit", reviewReady:"Review ready!", startReview:"Start Review",
-    goPractice:"Go to Practice", suggestTitle:"🆕 Suggest a new word", submit:"Submit",
-    selectLevels:"Select level(s)", wordCount:"How many words to learn?", start:"Start",
-    studyTime:"Time to memorize (min):", studyTitle:"📚 Memorize the words", studyHint:"Words stay visible until the timer ends.",
-    studyExport:"📥 Download list (CSV)", studySkip:"Start without waiting", studyDone:"Time is up!",
-    studyDoneHint:"If you have memorized the words, start the practice!", beginPractice:"Start Practice",
-    makeSentence:"Write your own sentence:", check:"CHECK", batchDone:"Batch complete!", whenReview:"When to review?",
-    confirm:"Confirm", ranking:"🏆 Ranking", statusTitle:"⚙️ Status", buy:"Buy 1000 words",
-    save:"Save", home:"Home", dictionary:"Search", practice:"Practice", newTab:"New", profile:"Profile",
-    subTitle:"Subscribe to continue", subDesc:"Subscribe to the channels below to use the app.",
-    subCheck:"✅ Check", homeMyWords:"⭐ My Saved Words", homeSuggestions:"🆕 My Suggested Words",
-    mySuggestions:"📝 My Suggested Words",
-    practiceSaved:"⭐ Practice saved words", yourRank:"Your rank", yourLevel:"Your level", reviewResult:"Review result",
-    ok:"OK", buyCredits2:"Buy credits", goVocab:"Go to Word Search",
-    avatarHint:"To set a photo, send it directly to the bot — it will be saved automatically.",
-    viewRanking:"🏆 View ranking", view:"View",
-    fileTitle:"📄 Analyze a file", fileHint:"Upload PDF, DOCX or TXT — words are extracted and added to your personal base.", fileAnalyze:"Analyze",
-    ticketTitle:"🆘 Contact admin", ticketSend:"Send",
-    referralTitle:"🎁 Invite friends", referralHint:"Get bonus credits for each active friend.", refInvited:"Invited", refEarned:"Bonus credits",
-    reviewPassedMsg:"🎉 Above 85% — congratulations, these words moved to ACTIVE VOCABULARY!",
-    reviewFailedMsg:"Below 85% — this whole batch goes back for review.", ready:"✅ Done" }
-};
-const LANG_ORDER = ["uz","ru","en"];
-
-const INTRO_TEXTS = {
-  uz: "UnlockWord — ingliz tilini o'rganish uchun ilova.\n\n🔎 Search — 15,000+ so'zni izohi, sinonimi, misollari bilan ko'rasiz.\n🔓 Practice — bo'lim tanlaysiz, so'zlarni o'rganasiz va o'zingiz gap tuzasiz, AI xatolaringizni tuzatadi.\n✨ New — yangi so'z taklif qilasiz.\n🏆 Reyting — eng ko'p so'z o'rgangan foydalanuvchilar.\n\nMaqsad: so'zni shunchaki bilish emas, uni ishlata olish!",
-  ru: "UnlockWord — приложение для изучения английского языка.\n\n🔎 Search — более 15,000 слов с переводом, синонимами и примерами.\n🔓 Practice — выбираете уровень, изучаете слова и составляете предложения, AI исправляет ошибки.\n✨ New — предлагайте новые слова.\n🏆 Рейтинг — пользователи, выучившие больше всего слов.\n\nЦель: не просто знать слово, а уметь его использовать!",
-  en: "UnlockWord is an app for learning English vocabulary.\n\n🔎 Search — 15,000+ words with translations, synonyms and examples.\n🔓 Practice — pick a level, learn words, and write your own sentences; AI corrects your mistakes.\n✨ New — suggest new words.\n🏆 Ranking — see who has learned the most words.\n\nGoal: don't just know the word — use it!",
-};
-const INTRO_TITLES = { uz: "UnlockWord'ga xush kelibsiz!", ru: "Добро пожаловать в UnlockWord!", en: "Welcome to UnlockWord!" };
-
-let STATE = { telegramId:null, name:"", lang:"uz", secondaryLang:"uz", selectedLevels:[], currentBatch:null,
-  currentWordIndex:0, currentWordList:[], lastPaymentId:null, selectedSavedIds:[], isReviewMode:false,
-  reviewCorrect:0, reviewTotal:0, studyMinutes:5 };
-
-function t(key){ return (I18N[STATE.lang] && I18N[STATE.lang][key]) || I18N.uz[key] || key; }
-function effectiveTranslationLang(){ return STATE.lang === "en" ? (STATE.secondaryLang || "uz") : STATE.lang; }
-
-function applyI18n(){
-  const map = {
-    "header-tagline":"tagline","home-greeting":"greeting","lbl-active":"active","lbl-practiced":"practiced",
-    "lbl-accuracy":"accuracy","lbl-credits":"credits","lbl-review-ready":"reviewReady","btn-start-review":"startReview",
-    "btn-go-practice":"goPractice","lbl-suggest-title":"suggestTitle","btn-submit-suggestion":"submit",
-    "lbl-select-levels":"selectLevels","lbl-word-count":"wordCount","btn-start-practice":"start",
-    "lbl-study-time":"studyTime","lbl-study-title":"studyTitle","lbl-study-hint":"studyHint",
-    "btn-study-export":"studyExport","btn-study-skip":"studySkip","lbl-study-done":"studyDone",
-    "lbl-study-done-hint":"studyDoneHint","btn-begin-practice":"beginPractice",
-    "lbl-make-sentence":"makeSentence","btn-check-sentence":"check","lbl-batch-done":"batchDone",
-    "lbl-when-review":"whenReview","btn-confirm-review":"confirm","lbl-ranking-title":"ranking",
-    "btn-save-profile":"save","nav-home":"home",
-    "nav-dictionary":"dictionary","nav-practice":"practice","nav-new":"newTab","nav-profile":"profile",
-    "sub-title":"subTitle","sub-desc":"subDesc","sub-check-btn":"subCheck","lbl-home-mywords":"homeMyWords",
-    "lbl-my-suggestions":"mySuggestions","btn-practice-saved":"practiceSaved","lbl-your-rank":"yourRank",
-    "lbl-your-level":"yourLevel","lbl-review-result":"reviewResult",
-    "btn-home-vocab":"goVocab","lbl-avatar-hint":"avatarHint",
-    "keyboard-done-btn":"ready",
-    "lbl-file-title":"fileTitle","lbl-file-hint":"fileHint","btn-file-analyze":"fileAnalyze",
-    "lbl-ticket-title":"ticketTitle","btn-ticket-send":"ticketSend",
-    "lbl-referral-title":"referralTitle","lbl-referral-hint":"referralHint","lbl-ref-invited":"refInvited","lbl-ref-earned":"refEarned",
-  };
-  for(const id in map) { const el = document.getElementById(id); if(el) el.textContent = t(map[id]); }
-  document.getElementById("lang-btn").textContent = STATE.lang.toUpperCase();
-
-  const ph = {
-    "dict-search": {uz:"So'z qidiring... (yoki # raqami)", ru:"Поиск слова... (или № )", en:"Search word... (or #number)"},
-    "sug-word": {uz:"Inglizcha so'z", ru:"Английское слово", en:"English word"},
-    "sug-translation": {uz:"O'zbekcha tarjima", ru:"Узбекский перевод", en:"Uzbek translation"},
-    "sug-translation-ru": {uz:"Ruscha tarjima (ixtiyoriy)", ru:"Русский перевод (необязательно)", en:"Russian translation (optional)"},
-    "sug-description": {uz:"Tavsif (inglizcha ma'nosi)", ru:"Описание (значение на английском)", en:"Description (English meaning)"},
-    "sug-synonym": {uz:"Sinonim (ixtiyoriy)", ru:"Синоним (необязательно)", en:"Synonym (optional)"},
-    "word-count-input": {uz:"Masalan: 20", ru:"Например: 20", en:"E.g. 20"},
-    "sentence-input": {uz:"Masalan: I want to achieve my goals.", ru:"Например: I want to achieve my goals.", en:"E.g. I want to achieve my goals."},
-    "profile-nickname": {uz:"Nik", ru:"Ник", en:"Nickname"},
-    "credits-amount-input": {uz:"Nechta kredit?", ru:"Сколько кредитов?", en:"How many credits?"},
-  };
-  for(const id in ph){ const el = document.getElementById(id); if(el) el.placeholder = ph[id][STATE.lang] || ph[id].uz; }
-}
-
-function toggleLang(){
-  const idx = LANG_ORDER.indexOf(STATE.lang);
-  STATE.lang = LANG_ORDER[(idx+1) % LANG_ORDER.length];
-  applyI18n();
-  if(STATE.telegramId) api("/api/profile/update", {method:"POST", body: JSON.stringify({telegram_id: STATE.telegramId, lang: STATE.lang})}).catch(()=>{});
+function goTab(t){
+  document.querySelectorAll('.view-sec').forEach(e=>e.classList.add('hidden'));
+  document.getElementById('tab-'+t).classList.remove('hidden');
+  document.querySelectorAll('.dock-btn, .dock-circle').forEach(e=>e.classList.remove('active'));
+  document.querySelector(`[data-tab="${t}"]`).classList.add('active');
+  if(t==='dictionary'){
+      loadHistory();
+      if(!document.getElementById('search-inp').value) {
+          document.getElementById('search-history').classList.remove('hidden');
+          document.getElementById('search-results').innerHTML = '';
+      }
+  }
 }
 
 function toggleTheme(){
-  document.body.classList.toggle("dark");
-  const isDark = document.body.classList.contains("dark");
-  document.getElementById("theme-btn").textContent = isDark ? "☀️" : "🌙";
-  localStorage.setItem("uw_theme", isDark ? "dark" : "light");
+  document.body.classList.toggle('light');
+  document.body.classList.toggle('dark');
 }
 
-function initTelegram(){
-  try{
-    const tg = window.Telegram?.WebApp;
-    if(tg && tg.initDataUnsafe && tg.initDataUnsafe.user){
-      tg.expand();
-      try{ tg.setHeaderColor && tg.setHeaderColor("#0F172A"); tg.setBackgroundColor && tg.setBackgroundColor("#0F172A"); }catch(e){}
-      STATE.telegramId = tg.initDataUnsafe.user.id;
-      STATE.name = tg.initDataUnsafe.user.first_name || "";
-      return true;
-    }
-  }catch(e){}
-  return false;
+function closeAnyKeyboard(){
+  if(document.activeElement) document.activeElement.blur();
 }
+
+document.addEventListener("focusin", e => {
+  if(e.target.matches("input,textarea")) document.getElementById('keyboard-done-bar').style.display = "flex";
+});
+document.addEventListener("focusout", e => {
+  if(e.target.matches("input,textarea")) {
+      setTimeout(()=>{ if(!document.activeElement || !document.activeElement.matches("input,textarea")) document.getElementById('keyboard-done-bar').style.display = "none"; }, 100);
+  }
+});
 
 async function api(path, opts={}){
-  const res = await fetch(CONFIG.API_BASE + path, {headers:{"Content-Type":"application/json"}, ...opts});
-  if(!res.ok){
-    const err = await res.json().catch(()=>({detail:"Xatolik"}));
-    throw new Error(err.detail || "Server xatosi");
-  }
-  return res.status === 204 ? null : res.json();
+  opts.headers = opts.headers || {};
+  if(!opts.body || typeof opts.body === "string") opts.headers["Content-Type"] = "application/json";
+  const r = await fetch(API + path, opts);
+  return r.json();
 }
 
-function goTo(tab){
-  document.querySelectorAll("main > section").forEach(s=>s.classList.add("hidden"));
-  const sec = document.getElementById("tab-"+tab);
-  sec.classList.remove("hidden");
-  sec.classList.remove("fade-in"); void sec.offsetWidth; sec.classList.add("fade-in");
+window.onload = async () => {
+  const tg = window.Telegram?.WebApp;
+  if(tg && tg.initDataUnsafe?.user) UID = tg.initDataUnsafe.user.id;
   
-  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
-  const dockTab = ["home","dictionary","practice","new","profile"].includes(tab) ? tab : "profile";
-  const btn = document.querySelector(`.tab-btn[data-tab="${dockTab}"]`);
-  if(btn){ btn.classList.add("active"); }
+  // Rasm ikonkalarni sozlamalardan o'qish
+  try {
+      const sets = await api("/api/settings/public");
+      ['home','search','practice','new','profile'].forEach(k => {
+          if(sets["icon_"+k]) document.getElementById("icon-"+k).innerHTML = `<img src="${sets['icon_'+k]}" style="width:20px;height:20px;object-fit:cover;">`;
+      });
+  } catch(e){}
 
-  if(tab==="ranking") loadRanking();
-  if(tab==="profile"){ loadProfileTab(); loadReferral(); restorePendingPayment(); }
-  if(tab==="new"){ loadMySuggestions(); loadTickets(); }
-  if(tab==="home"){ loadProgress(); loadHomeWidgets(); }
-  if(tab==="dictionary"){ 
-    loadSearchHistory(); 
-    if(!document.getElementById('dict-search').value.trim()){
-      document.getElementById('search-history-box').classList.remove('hidden');
-      document.getElementById('dict-results').innerHTML = '';
-      document.getElementById('dict-detail-card').classList.add('hidden');
-    }
+  if(UID){
+      api('/api/progress/'+UID).then(d=>{
+          document.getElementById('home-name').textContent = d.nickname || "Foydalanuvchi";
+          document.getElementById('prof-name').textContent = d.nickname || "Foydalanuvchi";
+          document.getElementById('prof-id').textContent = d.display_id;
+          document.getElementById('stat-active').textContent = d.active_words;
+          document.getElementById('stat-practiced').textContent = d.words_practiced;
+          document.getElementById('prof-credits').textContent = d.credits;
+          if(d.avatar_url){
+              document.getElementById('home-avatar').src = d.avatar_url; document.getElementById('home-avatar').style.display='block';
+              document.getElementById('prof-ava').src = d.avatar_url; document.getElementById('prof-ava').style.display='inline-block';
+          }
+      }).catch(e=>{});
   }
-}
 
-function closeKeyboard(){ document.getElementById("sentence-input").blur(); window.scrollTo(0,0); }
+  goTab('home');
+};
 
-async function loadPublicSettings(){
-  try{
-    const s = await api("/api/settings/public");
-    if(s.logo_url) document.getElementById("header-logo").innerHTML = `<img src="${s.logo_url}">`;
-    if(s.bg_color) document.documentElement.style.setProperty("--bg", s.bg_color);
-    STATE.pricePer1000 = s.price_per_1000;
-    STATE.paymentCard = s.payment_card;
-    STATE.minCreditsPurchase = s.min_credits_purchase;
-    STATE.botUsername = (s.help_admin || s.main_channel || "").replace("@","");
-    const footer = document.getElementById("footer-links");
-    if(footer){
-      let parts = [];
-      if(s.main_channel) parts.push(`📰 <a href="https://t.me/${s.main_channel.replace('@','')}" target="_blank" style="color:#C7CBFF;">${s.main_channel}</a>`);
-      if(s.help_admin) parts.push(`🆘 <a href="https://t.me/${s.help_admin.replace('@','')}" target="_blank" style="color:#C7CBFF;">${s.help_admin}</a>`);
-      footer.innerHTML = parts.join(" &nbsp;·&nbsp; ") || "—";
-    }
-  }catch(e){}
-}
+let st=null;
+function clearSearch(){ document.getElementById('search-inp').value=''; doSearch(); }
+function doSearch(){
+  const q = document.getElementById('search-inp').value.trim();
+  const hist = document.getElementById('search-history');
+  const res = document.getElementById('search-results');
+  document.getElementById('word-detail-view').classList.add('hidden');
+  document.getElementById('search-list-view').classList.remove('hidden');
 
-async function checkSubscriptionGate(){
-  if(!STATE.telegramId){
-    document.getElementById("subscribe-screen").classList.add("hidden");
-    document.getElementById("app-root").classList.remove("hidden");
-    return;
-  }
-  try{
-    const r = await api("/api/subscription/status/"+STATE.telegramId);
-    if(r.ok){
-      document.getElementById("subscribe-screen").classList.add("hidden");
-      document.getElementById("app-root").classList.remove("hidden");
-    }else{
-      document.getElementById("app-root").classList.add("hidden");
-      document.getElementById("subscribe-screen").classList.remove("hidden");
-      document.getElementById("sub-channel-list").innerHTML = r.missing.map(ch=>{
-        const url = ch.invite_link || (ch.chat_ref.startsWith("@") ? "https://t.me/"+ch.chat_ref.slice(1) : "#");
-        return `<a class="subscribe-btn" href="${url}" target="_blank">📢 ${ch.title || ch.chat_ref}</a>`;
-      }).join("");
-    }
-  }catch(e){
-    document.getElementById("subscribe-screen").classList.add("hidden");
-    document.getElementById("app-root").classList.remove("hidden");
-  }
-}
-async function recheckSubscription(){ await checkSubscriptionGate(); }
-
-async function loginAndLoad(){
-  if(!STATE.telegramId) return;
-  const u = await api("/api/auth/login", {method:"POST", body: JSON.stringify({telegram_id: STATE.telegramId, name: STATE.name})});
-  STATE.lang = u.lang || "uz";
-  STATE.secondaryLang = u.secondary_lang || "uz";
-  applyI18n();
-  document.getElementById("home-name").textContent = u.nickname || u.name || u.display_id;
-  if(u.avatar_url){ const a=document.getElementById("home-avatar"); a.src=u.avatar_url; a.style.display="block"; }
-  loadProgress();
-  loadHomeWidgets();
-  checkReviewStatus();
-  loadNotifications();
-  claimReferralIfAny();
-  if(!u.seen_intro){
-    showIntro();
-  }
-}
-
-function showIntro(){
-  document.getElementById("app-root").classList.add("hidden");
-  document.getElementById("intro-screen").classList.remove("hidden");
-  document.getElementById("intro-title").textContent = INTRO_TITLES[STATE.lang] || INTRO_TITLES.uz;
-  document.getElementById("intro-text").textContent = INTRO_TEXTS[STATE.lang] || INTRO_TEXTS.uz;
-}
-
-async function dismissIntro(){
-  document.getElementById("intro-screen").classList.add("hidden");
-  document.getElementById("app-root").classList.remove("hidden");
-  try{
-    await api("/api/profile/mark-intro-seen?telegram_id="+STATE.telegramId, {method:"POST"});
-  }catch(e){}
-}
-
-// ---- Notifications ----
-async function loadNotifications(){
-  try{
-    const list = await api("/api/notifications/"+STATE.telegramId);
-    const box = document.getElementById("notif-container");
-    box.innerHTML = list.map(n=>`
-      <div class="notif-banner" id="notif-${n.id}">
-        <div>${n.message}</div>
-        <button class="btn secondary" onclick="dismissNotification(${n.id})">${t("ok")}</button>
-      </div>
-    `).join("");
-  }catch(e){}
-}
-async function dismissNotification(id){
-  await api("/api/notifications/"+id+"/read", {method:"POST"});
-  const el = document.getElementById("notif-"+id);
-  if(el) el.remove();
-}
-
-// ---- Dictionary / Search ----
-let dictTimer = null;
-function clearSearchInput(){ 
-  document.getElementById('dict-search').value=''; 
-  onDictSearch(); 
-}
-
-async function loadSearchHistory(){
-  if(!STATE.telegramId) return;
-  try{
-    const list = await api("/api/dictionary/history/"+STATE.telegramId);
-    const histBox = document.getElementById("search-history-box");
-    const histRes = document.getElementById("history-results");
-    if(list.length > 0){
-      histRes.innerHTML = list.map(r=>`
-        <div class="search-result" onclick="openWord(${r.id})">
-          <div><b>${r.word}</b>${r.translation_preview ? `<div class="muted" style="font-size:12px;">${r.translation_preview}</div>` : ""}</div>
-          <span class="badge">${r.base_level||""}</span>
-        </div>`).join("");
-      if(document.getElementById("dict-search").value.trim()==="") histBox.classList.remove('hidden');
-    } else {
-      histBox.classList.add('hidden');
-    }
-  }catch(e){}
-}
-
-async function clearSearchHistory(){
-  await api("/api/dictionary/clear-history/"+STATE.telegramId, {method:"POST"});
-  loadSearchHistory();
-}
-
-function onDictSearch(){
-  clearTimeout(dictTimer);
-  const q = document.getElementById("dict-search").value.trim();
-  document.getElementById("dict-detail-card").classList.add("hidden");
-  document.getElementById("dict-results").classList.remove('hidden');
-  
-  if(q.length < 1){ 
-    document.getElementById("dict-results").innerHTML = ""; 
-    document.getElementById("search-history-box").classList.remove('hidden');
-    return; 
-  }
-  document.getElementById("search-history-box").classList.add('hidden');
-  
-  dictTimer = setTimeout(async ()=>{
-    try{
-      const results = await api(`/api/dictionary/search?q=${encodeURIComponent(q)}&lang=${effectiveTranslationLang()}`);
-      document.getElementById("dict-results").innerHTML = results.map(r=>`
-        <div class="search-result" onclick="openWord(${r.id})">
-          <div><b>${r.word}</b>${r.translation_preview ? `<div class="muted" style="font-size:12px;">${r.translation_preview}</div>` : ""}</div>
-          <span class="badge">${r.base_level||""}</span>
-        </div>`).join("") || `<div class="muted" style="text-align:center; padding:10px;">Natija topilmadi.</div>`;
-      const exact = results.find(r=>r.word.toLowerCase()===q.toLowerCase());
-      if(exact) openWord(exact.id);
-    }catch(e){}
+  if(!q){ hist.classList.remove('hidden'); res.innerHTML=''; return; }
+  hist.classList.add('hidden');
+  clearTimeout(st);
+  st = setTimeout(async ()=>{
+    const data = await api('/api/dictionary/search?q='+q);
+    res.innerHTML = data.map(w=>`<div class="search-item" onclick="openWord(${w.id})"><div><b>${w.word}</b><div class="muted" style="font-size:12px;font-weight:normal;">${w.translation_preview}</div></div><span class="badge">${w.base_level}</span></div>`).join('');
   }, 300);
 }
 
 async function openWord(id){
-  const w = await api(`/api/dictionary/word/${id}?telegram_id=${STATE.telegramId}&lang=${effectiveTranslationLang()}`);
-  const saved = await api("/api/words/saved/"+STATE.telegramId).catch(()=>[]);
-  const isSaved = saved.some(s=>s.id===id);
-  
-  document.getElementById("dict-results").classList.add('hidden');
-  document.getElementById("search-history-box").classList.add('hidden');
-  
-  const card = document.getElementById("dict-detail-card");
-  card.classList.remove("hidden");
-  card.classList.remove("fade-in"); void card.offsetWidth; card.classList.add("fade-in");
-  
-  const content = document.getElementById("wd-content");
-  content.innerHTML = `
-    <div style="display:flex; justify-content:flex-end;">
-      <button class="btn ${isSaved?'secondary':'success'}" style="width:auto; padding:8px 12px;" onclick="toggleSaveWord(${id}, ${isSaved})" id="save-word-btn">${isSaved?'✓ Saqlangan':'💾 Saqlash'}</button>
+  const w = await api(`/api/dictionary/word/${id}?telegram_id=${UID}`);
+  document.getElementById('search-list-view').classList.add('hidden');
+  document.getElementById('word-detail-view').classList.remove('hidden');
+  document.getElementById('wd-word').textContent = w.word;
+  document.getElementById('wd-pron').textContent = w.pronunciation ? `/${w.pronunciation}/` : '';
+  document.getElementById('wd-lvl').textContent = w.base_level;
+  document.getElementById('wd-rank').textContent = `Daraja ${w.rank}`;
+  document.getElementById('wd-meanings').innerHTML = w.meanings.map((m,i)=>`
+    <div class="word-detail-box">
+      <b>${i+1}. ${m.translation_shown}</b> <span class="badge">${m.cefr_level}</span>
+      <div class="muted" style="margin-top:4px;">${m.meaning||""}</div>
+      <div class="muted" style="margin-top:8px; font-style:italic;">${(m.examples||[]).map(e=>`• ${e}`).join('<br>')}</div>
     </div>
-    <div class="word-head">
-      <h2 style="font-size:36px; margin-bottom:5px;">${w.word.toUpperCase()}</h2>
-      <div class="pronounce">/${w.pronunciation || w.word}/</div>
-      <div style="margin-top:10px;">
-        <span class="badge" style="font-size:14px; padding:6px 12px;">[verb] ${w.base_level||""}</span>
-        <span class="badge" style="background:linear-gradient(135deg,#0ea5e9,#3b82f6); color:#fff; font-size:14px; padding:6px 12px; border:none;">Daraja ${w.rank || 0}</span>
-      </div>
-    </div>
-    ${w.meanings.map((m, i)=>`
-      <div style="margin-top:16px; padding:16px; background:var(--bg2); border-radius:14px; text-align:left;">
-        <div style="font-weight:900; font-size:16px;">${i+1}. ${m.translation_shown||""}</div>
-        <div class="muted" style="margin-bottom:8px;">${m.meaning||""}</div>
-        ${(m.examples||[]).map(ex=>`<div class="muted" style="margin-top:4px; font-style:italic;">• ${ex}</div>`).join("")}
-      </div>
-    `).join("")}
-    ${w.synonyms.length? `<div style="margin-top:16px; text-align:left;"><b>Sinonimlar:</b><br>${w.synonyms.map(s=>`<span class="synonym-chip" onclick="openWord(${s.id})">${s.word}</span>`).join("")}</div>`:""}
-    ${w.antonyms.length? `<div style="margin-top:16px; text-align:left;"><b>Antonimlar:</b><br>${w.antonyms.map(a=>`<span class="antonym-chip" onclick="openWord(${a.id})">${a.word}</span>`).join("")}</div>`:""}
-  `;
+  `).join('');
 }
 
-async function toggleSaveWord(id, isSaved){
-  if(isSaved) await api("/api/words/unsave", {method:"POST", body: JSON.stringify({telegram_id: STATE.telegramId, word_id: id})});
-  else await api("/api/words/save", {method:"POST", body: JSON.stringify({telegram_id: STATE.telegramId, word_id: id})});
-  openWord(id);
-  loadHomeWidgets();
-}
-
-// ---- Suggest word (New tab) ----
-function onSuggestWordInput(){
-  const val = document.getElementById("sug-word").value.trim();
-  document.getElementById("sug-extra-fields").classList.toggle("hidden", val.length===0);
-}
-async function submitWordSuggestion(){
-  const ex1 = document.getElementById("sug-example1").value.trim();
-  const ex2 = document.getElementById("sug-example2").value.trim();
-  if(!ex1 || !ex2) {
-    alert("2 ta misol yozish majburiy!");
-    return;
+async function loadHistory(){
+  if(!UID) return;
+  const h = await api('/api/dictionary/history/'+UID);
+  if(h.length > 0) {
+      document.getElementById('history-items').innerHTML = h.map(w=>`<div class="search-item" onclick="openWord(${w.id})"><div><b>${w.word}</b><div class="muted" style="font-size:12px;font-weight:normal;">${w.translation_preview}</div></div><span class="badge">${w.base_level}</span></div>`).join('');
+  } else {
+      document.getElementById('search-history').classList.add('hidden');
   }
-  
-  const body = {
-    telegram_id: STATE.telegramId, word: document.getElementById("sug-word").value.trim(),
-    translation: document.getElementById("sug-translation").value.trim(),
-    translation_ru: document.getElementById("sug-translation-ru").value.trim(),
-    description: document.getElementById("sug-description").value.trim(),
-    synonym: document.getElementById("sug-synonym").value.trim(), level: document.getElementById("sug-level").value,
-    example1: ex1, example2: ex2
-  };
-  if(!body.word || !body.translation) return alert("So'z va tarjimani kiriting.");
-  try{
-    const res = await api("/api/words/suggest", {method:"POST", body: JSON.stringify(body)});
-    alert(res.message);
-    ["sug-word","sug-translation","sug-translation-ru","sug-description","sug-synonym","sug-example1","sug-example2"].forEach(id=>document.getElementById(id).value="");
-    document.getElementById("sug-extra-fields").classList.add("hidden");
-    loadMySuggestions();
-    loadHomeWidgets();
-    loadProgress();
-  }catch(e){ alert(e.message); }
+}
+async function clearHistory(){ await api('/api/dictionary/clear-history/'+UID, {method:'POST'}); loadHistory(); }
+
+async function uploadFile(){
+  const file = document.getElementById('f-file').files[0];
+  if(!file) return alert("Fayl tanlang");
+  const fd = new FormData(); fd.append("telegram_id", UID); fd.append("file", file);
+  document.getElementById('f-res').innerHTML = "<div class='muted'>Tahlil qilinmoqda... PDF biroz vaqt olishi mumkin.</div>";
+  try {
+    const r = await fetch(API+"/api/file/analyze", {method:"POST", body:fd}).then(x=>x.json());
+    if(r.detail) throw new Error(r.detail);
+    document.getElementById('f-res').innerHTML = `<div class='result-ok'><b>${r.word_count} so'z topildi.</b><br>Narxi: ${r.price} kredit.<br><button class="btn success" onclick="api('/api/file/confirm',{method:'POST',body:JSON.stringify({telegram_id:${UID},job_id:${r.job_id}})}).then(x=>{if(x.status=='ok') alert('Saqlandi!'); else alert(x.detail);})">Tasdiqlash</button></div>`;
+  } catch(e){ document.getElementById('f-res').innerHTML = `<div class='result-bad'>${e.message}</div>`; }
 }
 
-async function loadMySuggestions(){
-  if(!STATE.telegramId) return;
-  try{
-    const list = await api("/api/words/mysuggestions/"+STATE.telegramId);
-    const box = document.getElementById("new-suggestions-list");
-    const statusLabel = {active:"✅", pending_admin:"⏳"};
-    box.innerHTML = list.length ? list.map(w=>`<div style="padding:4px 0;">${statusLabel[w.status]||"❓"} <b>${w.word}</b> <span class="badge">${w.base_level||""}</span></div>`).join("") : "—";
-  }catch(e){}
+let pTimer=null;
+async function startPracticeTimer(){
+  const lvls = Array.from(document.querySelectorAll('#lvl-grid button.selected')).map(b=>b.textContent);
+  if(lvls.length==0) return alert("Daraja tanlang");
+  const count = parseInt(document.getElementById('pract-count').value);
+  try {
+      const res = await api('/api/batch/start', {method:'POST', body: JSON.stringify({telegram_id:UID, levels:lvls, count:count})});
+      BATCH_ID = res.batch_id;
+      const bInfo = await api('/api/batch/current/'+UID);
+      PR_WORDS = bInfo.words;
+      
+      document.getElementById('pract-setup').classList.add('hidden');
+      document.getElementById('pract-timer-view').classList.remove('hidden');
+      document.getElementById('pract-words-list').innerHTML = PR_WORDS.map(w=>`<div style="padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.05);"><b>${w.word}</b></div>`).join('');
+      
+      const mins = parseInt(document.getElementById('pract-time').value);
+      let end = Date.now() + mins*60000;
+      pTimer = setInterval(()=>{
+        let d = end - Date.now();
+        if(d<=0) finishTimer();
+        else document.getElementById('pract-timer').textContent = `${String(Math.floor(d/60000)).padStart(2,'0')}:${String(Math.floor((d%60000)/1000)).padStart(2,'0')}`;
+      },1000);
+  } catch(e){ alert(e.detail||"Xatolik"); }
 }
 
-// ---- Fayl tahlili (PDF/DOCX/TXT) ----
-let pendingFileJob = null;
-async function analyzeFile(){
-  const input = document.getElementById("file-input");
-  const box = document.getElementById("file-result");
-  if(!input.files || !input.files[0]){ alert("Avval fayl tanlang."); return; }
-  box.innerHTML = `<div class="muted" style="margin-top:8px;">Tahlil qilinmoqda...</div>`;
-  const fd = new FormData();
-  fd.append("telegram_id", STATE.telegramId);
-  fd.append("file", input.files[0]);
-  try{
-    const res = await fetch(CONFIG.API_BASE + "/api/file/analyze", {method:"POST", body: fd});
-    if(!res.ok){ const e = await res.json().catch(()=>({detail:"Xatolik"})); throw new Error(e.detail); }
-    const r = await res.json();
-    pendingFileJob = r.job_id;
-    box.innerHTML = `
-      <div class="result-ok">
-        <div><b>${r.filename}</b></div>
-        <div>Topilgan so'zlar: <b>${r.word_count}</b></div>
-        <div>Narx: <b>${r.price}</b> kredit · Sizda: <b>${r.your_credits}</b></div>
-        <button class="btn success block" style="margin-top:8px;" onclick="confirmFile()" id="btn-file-confirm">Tasdiqlash va qo'shish</button>
-      </div>`;
-  }catch(e){ box.innerHTML = `<div class="result-bad">${e.message}</div>`; }
-}
-async function confirmFile(){
-  const box = document.getElementById("file-result");
-  try{
-    const r = await api("/api/file/confirm", {method:"POST", body: JSON.stringify({telegram_id: STATE.telegramId, job_id: pendingFileJob})});
-    box.innerHTML = `<div class="result-ok">✅ ${r.words_saved} ta so'z shaxsiy bazangizga qo'shildi. ${r.credits_spent} kredit yechildi.</div>`;
-    pendingFileJob = null;
-    document.getElementById("file-input").value = "";
-    loadProgress();
-    loadHomeWidgets();
-  }catch(e){ box.innerHTML = `<div class="result-bad">${e.message}</div>`; }
+function finishTimer(){
+  clearInterval(pTimer);
+  document.getElementById('pract-timer-view').classList.add('hidden');
+  document.getElementById('pract-play-view').classList.remove('hidden');
+  PR_IDX = 0;
+  showPracticeWord();
 }
 
-// ---- Ticket (Adminga murojaat) ----
-async function sendTicket(){
-  const msg = document.getElementById("ticket-input").value.trim();
-  if(!msg){ alert("Xabar yozing."); return; }
-  try{
-    const r = await api("/api/ticket/create", {method:"POST", body: JSON.stringify({telegram_id: STATE.telegramId, message: msg})});
-    alert(r.message);
-    document.getElementById("ticket-input").value = "";
-    loadTickets();
-  }catch(e){ alert(e.message); }
-}
-async function loadTickets(){
-  if(!STATE.telegramId) return;
-  try{
-    const list = await api("/api/ticket/list/"+STATE.telegramId);
-    const box = document.getElementById("ticket-list");
-    box.innerHTML = list.length ? list.map(tk=>`
-      <div style="padding:8px 0; border-top:1px solid var(--border);">
-        <div>💬 ${tk.message}</div>
-        ${tk.admin_reply ? `<div class="result-ok" style="margin-top:6px;">📩 ${tk.admin_reply}</div>` : `<div class="muted" style="font-size:12px; margin-top:4px;">⏳ Javob kutilmoqda...</div>`}
-      </div>`).join("") : "";
-  }catch(e){}
-}
-
-// ---- Referral ----
-async function loadReferral(){
-  if(!STATE.telegramId) return;
-  try{
-    const r = await api("/api/referral/info/"+STATE.telegramId);
-    document.getElementById("ref-invited").textContent = r.invited_count;
-    document.getElementById("ref-earned").textContent = r.earned_credits;
-    const botUser = STATE.botUsername || "";
-    STATE.referralLink = botUser
-      ? `https://t.me/${botUser}?start=ref_${r.display_id}`
-      : `ref_${r.display_id}`;
-    document.getElementById("ref-link").textContent = STATE.referralLink;
-  }catch(e){}
-}
-function copyReferral(){ if(STATE.referralLink) copyText(STATE.referralLink); }
-
-async function claimReferralIfAny(){
-  try{
-    const sp = window.Telegram?.WebApp?.initDataUnsafe?.start_param || "";
-    if(sp.startsWith("ref_")){
-      const refId = sp.slice(4);
-      await api("/api/referral/claim", {method:"POST", body: JSON.stringify({telegram_id: STATE.telegramId, referrer_display_id: refId, ip: ""})}).catch(()=>{});
-    }
-  }catch(e){}
-}
-
-// ---- Practice ----
-function toggleLevel(level, btn){
-  const idx = STATE.selectedLevels.indexOf(level);
-  if(idx>=0){ STATE.selectedLevels.splice(idx,1); btn.classList.remove("selected"); }
-  else{ STATE.selectedLevels.push(level); btn.classList.add("selected"); }
-}
-
-async function startBatch(){
-  if(STATE.selectedLevels.length===0) return alert("Kamida bitta bo'lim tanlang.");
-  const count = parseInt(document.getElementById("word-count-input").value) || 20;
-  STATE.studyMinutes = parseInt(document.getElementById("study-minutes-select").value) || 5;
-  try{
-    await api("/api/batch/start", {method:"POST", body: JSON.stringify({telegram_id: STATE.telegramId, levels: STATE.selectedLevels, count})});
-    STATE.isReviewMode = false;
-    await enterStudyLock();
-  }catch(e){ alert(e.message); }
-}
-
-async function openSavedPractice(){
-  const saved = await api("/api/words/saved/"+STATE.telegramId);
-  if(saved.length===0){ alert("Saqlangan so'zlaringiz yo'q."); return; }
-  document.getElementById("setup-card").classList.add("hidden");
-  document.getElementById("saved-select-card").classList.remove("hidden");
-  STATE.selectedSavedIds = [];
-  document.getElementById("saved-word-list").innerHTML = saved.map(w=>`
-    <div class="saved-row"><input type="checkbox" onchange="toggleSavedSelect(${w.id}, this.checked)"><b>${w.word}</b> <span class="badge">${w.base_level||""}</span></div>
-  `).join("");
-}
-function toggleSavedSelect(id, checked){
-  if(checked) STATE.selectedSavedIds.push(id);
-  else STATE.selectedSavedIds = STATE.selectedSavedIds.filter(x=>x!==id);
-}
-function closeSavedPractice(){
-  document.getElementById("saved-select-card").classList.add("hidden");
-  document.getElementById("setup-card").classList.remove("hidden");
-}
-async function startBatchFromSaved(){
-  if(STATE.selectedSavedIds.length===0) return alert("Kamida bitta so'z tanlang.");
-  STATE.studyMinutes = parseInt(document.getElementById("study-minutes-select").value) || 5;
-  try{
-    await api("/api/batch/start-from-saved", {method:"POST", body: JSON.stringify({telegram_id: STATE.telegramId, word_ids: STATE.selectedSavedIds})});
-    document.getElementById("saved-select-card").classList.add("hidden");
-    STATE.isReviewMode = false;
-    await enterStudyLock();
-  }catch(e){ alert(e.message); }
-}
-
-// ---- Study Lock Mode (Yodlash bosqichi taymeri bilan) ----
-let studyTimer = null;
-async function enterStudyLock(){
-  const b = await api("/api/batch/current/"+STATE.telegramId);
-  if(!b) return;
-  STATE.currentBatch = b;
-  if(b.status === "review_ready"){ await loadCurrentBatch(); return; }
-  const words = b.words.filter(w=>w.status==="new" || w.status==="wrong");
-
-  ["setup-card","saved-select-card","learn-card","batch-done-card","review-score-card","study-ready-card"]
-    .forEach(id=>document.getElementById(id).classList.add("hidden"));
-  document.getElementById("study-lock-card").classList.remove("hidden");
-
-  document.getElementById("study-word-list").innerHTML = words.map(w=>`
-    <div class="saved-row" style="padding:10px 5px; border-bottom:1px solid rgba(255,255,255,0.05);">
-      <b style="font-size:16px;">${w.word}</b> <span class="badge">${w.base_level||""}</span><span class="muted" style="margin-left:auto;" id="study-tr-${w.word_id}"></span>
-    </div>
-  `).join("");
-  
-  words.forEach(w=>{
-    api(`/api/dictionary/word/${w.word_id}?lang=${effectiveTranslationLang()}`).then(full=>{
-      const el = document.getElementById("study-tr-"+w.word_id);
-      if(el && full.meanings[0]) el.textContent = full.meanings[0].translation_shown || "";
-    }).catch(()=>{});
-  });
-
-  const endAt = Date.now() + STATE.studyMinutes * 60000;
-  if(studyTimer) clearInterval(studyTimer);
-  function tick(){
-    const diff = endAt - Date.now();
-    if(diff <= 0){
-      clearInterval(studyTimer);
-      studyLockFinished();
+function showPracticeWord(){
+  if(PR_IDX >= PR_WORDS.length) {
+      document.getElementById('pract-play-view').classList.add('hidden');
+      document.getElementById('pract-done-view').classList.remove('hidden');
       return;
-    }
-    const m = String(Math.floor(diff/60000)).padStart(2,"0");
-    const s = String(Math.floor((diff%60000)/1000)).padStart(2,"0");
-    document.getElementById("study-countdown").textContent = `${m}:${s}`;
   }
-  tick();
-  studyTimer = setInterval(tick, 1000);
+  let w = PR_WORDS[PR_IDX];
+  document.getElementById('p-word').textContent = w.word;
+  document.getElementById('p-trans').textContent = w.base_level;
+  document.getElementById('p-sentence').value = '';
+  document.getElementById('p-ai-res').innerHTML = '';
+  document.getElementById('btn-next-word').classList.add('hidden');
 }
 
-function studyLockFinished(){
-  if(studyTimer){ clearInterval(studyTimer); studyTimer = null; }
-  document.getElementById("study-lock-card").classList.add("hidden");
-  document.getElementById("study-word-list").innerHTML = "";
-  document.getElementById("study-ready-card").classList.remove("hidden");
+async function checkSentence(){
+  const s = document.getElementById('p-sentence').value;
+  if(!s) return;
+  document.getElementById('p-ai-res').innerHTML = "Tekshirilmoqda...";
+  closeAnyKeyboard();
+  try {
+      const r = await api('/api/sentence/check', {method:'POST', body:JSON.stringify({telegram_id:UID, batch_id:BATCH_ID, word_id:PR_WORDS[PR_IDX].word_id, word:PR_WORDS[PR_IDX].word, sentence:s})});
+      if(r.is_correct) document.getElementById('p-ai-res').innerHTML = `<div class="result-ok">✅ To'g'ri!</div>`;
+      else document.getElementById('p-ai-res').innerHTML = `<div class="result-bad">❌ Xato: ${r.result.mistakes?.[0]?.explanation || "Mos kelmadi."}</div>`;
+      document.getElementById('btn-next-word').classList.remove('hidden');
+  } catch(e) { document.getElementById('p-ai-res').innerHTML = `<div class="result-bad">Xatolik</div>`; }
+}
+function nextPracticeWord(){ PR_IDX++; showPracticeWord(); }
+
+async function exportBotFile(){
+    await api(`/api/batch/export-bot/${BATCH_ID}?telegram_id=${UID}`, {method:'POST'});
+    alert("Ro'yxat Telegram botga yuborildi!");
 }
 
-function skipStudyLock(){ studyLockFinished(); }
-
-async function beginPractice(){
-  document.getElementById("study-ready-card").classList.add("hidden");
-  await loadCurrentBatch();
+function openCreditBox(){ document.getElementById('credit-box').classList.remove('hidden'); }
+async function buyCredit(){
+  const amt = document.getElementById('buy-cr-inp').value;
+  if(!amt) return;
+  const r = await api(`/api/payment/generate?telegram_id=${UID}&credits=${amt}`, {method:'POST'});
+  document.getElementById('buy-res').innerHTML = `<b>To'lov summasi: ${r.expected_amount} so'm</b><br>Karta: ${r.card}<br><button class="btn" style="margin-top:10px;" onclick="api('/api/payment/mark-paid/${r.payment_id}',{method:'POST'}).then(()=>alert('Kutilmoqda!'))">To'ladim</button>`;
 }
 
-async function loadCurrentBatch(){
-  const b = await api("/api/batch/current/"+STATE.telegramId);
-  if(!b) return;
-  STATE.currentBatch = b;
-  STATE.isReviewMode = (b.status === "review_ready");
-  STATE.reviewCorrect = 0;
-  STATE.reviewTotal = 0;
-  STATE.currentWordList = STATE.isReviewMode ? b.words.slice() : b.words.filter(w=>w.status==="new" || w.status==="wrong");
-  STATE.currentWordIndex = 0;
-  document.getElementById("setup-card").classList.add("hidden");
-  document.getElementById("saved-select-card").classList.add("hidden");
-  document.getElementById("batch-done-card").classList.add("hidden");
-  document.getElementById("review-score-card").classList.add("hidden");
-  document.getElementById("learn-card").classList.remove("hidden");
-  document.getElementById("learn-level-label").textContent = b.levels;
-  renderCurrentWord();
+async function submitSuggestion(){
+  const w = document.getElementById('sug-w').value;
+  const tr = document.getElementById('sug-tr').value;
+  const lvl = document.getElementById('sug-lvl').value;
+  const ex1 = document.getElementById('sug-ex1').value;
+  const ex2 = document.getElementById('sug-ex2').value;
+  if(!w || !tr || !ex1 || !ex2) return alert("Barcha maydonlarni, jumladan 2 ta misolni to'ldiring.");
+  const res = await api('/api/words/suggest', {method:'POST', body: JSON.stringify({telegram_id:UID, word:w, translation:tr, level:lvl, example1:ex1, example2:ex2})});
+  alert(res.message);
+  document.getElementById('sug-w').value = ''; document.getElementById('sug-tr').value=''; document.getElementById('sug-ex1').value=''; document.getElementById('sug-ex2').value='';
 }
-
-function renderCurrentWord(){
-  const list = STATE.currentWordList;
-  const total = list.length;
-  const done = STATE.isReviewMode ? STATE.reviewTotal : STATE.currentBatch.words.filter(w=>w.status==="correct").length;
-  document.getElementById("learn-progress-badge").textContent = `${done}/${total}`;
-  document.getElementById("learn-progress-bar").style.width = total ? Math.round((done/total)*100) + "%" : "0%";
-
-  if(STATE.currentWordIndex >= list.length){
-    document.getElementById("learn-card").classList.add("hidden");
-    if(STATE.isReviewMode){
-      finishReview();
-    }else{
-      document.getElementById("batch-done-card").classList.remove("hidden");
-    }
-    return;
-  }
-  const w = list[STATE.currentWordIndex];
-  document.getElementById("learn-word").textContent = w.word.toUpperCase();
-  document.getElementById("learn-word-level").textContent = w.base_level || "";
-  document.getElementById("learn-translation").textContent = "";
-  document.getElementById("learn-examples").innerHTML = "";
-  document.getElementById("sentence-input").value = "";
-  document.getElementById("ai-result").innerHTML = "";
-  document.getElementById("next-word-btn").classList.add("hidden");
-
-  api(`/api/dictionary/word/${w.word_id}?lang=${effectiveTranslationLang()}`).then(full=>{
-    if(full.meanings[0]){
-      document.getElementById("learn-translation").textContent = full.meanings[0].translation_shown || "";
-      document.getElementById("learn-examples").innerHTML = (full.meanings[0].examples||[]).map(e=>`<div>• ${e}</div>`).join("");
-    }
-  }).catch(()=>{});
-}
-
-async function submitSentence(){
-  const sentence = document.getElementById("sentence-input").value.trim();
-  const w = STATE.currentWordList[STATE.currentWordIndex];
-  const resultBox = document.getElementById("ai-result");
-  resultBox.innerHTML = `<div class="muted">Tekshirilmoqda...</div>`;
-  try{
-    const res = await api("/api/sentence/check", {method:"POST", body: JSON.stringify({
-      telegram_id: STATE.telegramId, batch_id: STATE.currentBatch.id, word_id: w.word_id, word: w.word, sentence
-    })});
-    if(res.stage === "validation"){
-      resultBox.innerHTML = `<div class="result-bad">${res.error}</div>`;
-      return;
-    }
-    const r = res.result;
-    if(res.is_correct){
-      resultBox.innerHTML = `<div class="result-ok">✅ To'g'ri! Ajoyib gap.</div>`;
-    }else{
-      resultBox.innerHTML = `<div class="result-bad">❌ Xatolar topildi:
-        ${r.mistakes.map(m=>`<div class="mistake-line"><b>${m.original}</b> → <b>${m.correction}</b><br><span class="muted">${m.explanation}</span></div>`).join("")}
-        <div style="margin-top:8px;"><b>To'g'ri variant:</b> ${r.corrected_sentence}</div>
-      </div>`;
-    }
-    document.getElementById("next-word-btn").classList.remove("hidden");
-    closeKeyboard();
-    w.status = res.is_correct ? "correct" : "wrong";
-    if(STATE.isReviewMode){
-      STATE.reviewTotal++;
-      if(res.is_correct) STATE.reviewCorrect++;
-    }
-  }catch(e){
-    resultBox.innerHTML = `<div class="result-bad">${e.message}</div>`;
-  }
-}
-
-document.addEventListener("keydown", function(e){
-  if(e.key === "Enter" && document.activeElement && document.activeElement.id === "sentence-input" && !e.shiftKey){
-    e.preventDefault();
-    submitSentence();
-  }
-});
-
-function nextWord(){ STATE.currentWordIndex++; renderCurrentWord(); }
-
-async function exportBatch(){
-  window.open(CONFIG.API_BASE + "/api/batch/export/" + STATE.currentBatch.id, "_blank");
-}
-
-async function scheduleReview(){
-  const delay = document.getElementById("review-delay-select").value;
-  await api("/api/batch/finish-learning/"+STATE.currentBatch.id, {method:"POST"});
-  await api("/api/review/schedule", {method:"POST", body: JSON.stringify({
-    telegram_id: STATE.telegramId, batch_id: STATE.currentBatch.id, delay_key: delay
-  })});
-  goTo("home");
-  document.getElementById("batch-done-card").classList.add("hidden");
-  document.getElementById("setup-card").classList.remove("hidden");
-  STATE.selectedLevels = [];
-  document.querySelectorAll("#level-grid button").forEach(b=>b.classList.remove("selected"));
-  checkReviewStatus();
-}
-
-async function finishReview(){
-  const accuracy = STATE.reviewTotal ? Math.round((STATE.reviewCorrect/STATE.reviewTotal)*100) : 0;
-  try{
-    const res = await api(`/api/review/submit-score?batch_id=${STATE.currentBatch.id}&correct=${STATE.reviewCorrect}&total=${STATE.reviewTotal}`, {method:"POST"});
-    document.getElementById("review-score-card").classList.remove("hidden");
-    document.getElementById("review-score-display").textContent = res.accuracy + "%";
-    document.getElementById("review-score-display").style.color = res.passed ? "var(--green)" : "var(--red)";
-    document.getElementById("review-score-detail").textContent = res.passed ? t("reviewPassedMsg") : t("reviewFailedMsg");
-  }catch(e){ alert(e.message); }
-}
-
-function afterReviewDone(){
-  document.getElementById("review-score-card").classList.add("hidden");
-  document.getElementById("setup-card").classList.remove("hidden");
-  goTo("home");
-  loadProgress();
-  checkReviewStatus();
-}
-
-let countdownTimer = null;
-async function checkReviewStatus(){
-  try{
-    const r = await api("/api/review/status/"+STATE.telegramId);
-    if(countdownTimer) clearInterval(countdownTimer);
-    if(!r){
-      document.getElementById("review-ready-card").classList.add("hidden");
-      document.getElementById("review-countdown-card").classList.add("hidden");
-      return;
-    }
-    if(r.status === "review_ready"){
-      document.getElementById("review-countdown-card").classList.add("hidden");
-      document.getElementById("review-ready-card").classList.remove("hidden");
-      return;
-    }
-    const target = new Date(r.next_review_at + "Z").getTime();
-    function tick(){
-      const diff = target - Date.now();
-      if(diff <= 0){
-        clearInterval(countdownTimer);
-        document.getElementById("review-countdown-card").classList.add("hidden");
-        document.getElementById("review-ready-card").classList.remove("hidden");
-        return;
-      }
-      document.getElementById("review-countdown-card").classList.remove("hidden");
-      document.getElementById("review-ready-card").classList.add("hidden");
-      const h = String(Math.floor(diff/3600000)).padStart(2,"0");
-      const m = String(Math.floor((diff%3600000)/60000)).padStart(2,"0");
-      const s = String(Math.floor((diff%60000)/1000)).padStart(2,"0");
-      document.getElementById("countdown-display").textContent = `${h}:${m}:${s}`;
-    }
-    tick();
-    countdownTimer = setInterval(tick, 1000);
-  }catch(e){}
-}
-function startReview(){ goTo("practice"); loadCurrentBatch(); }
-
-// ---- Home widgets ----
-async function loadHomeWidgets(){
-  if(!STATE.telegramId) return;
-  try{
-    const saved = await api("/api/words/saved/"+STATE.telegramId);
-    document.getElementById("home-mywords-preview").innerHTML = saved.length
-      ? saved.slice(0,5).map(w=>`<div style="padding:4px 0;">• <b style="font-size:14px;">${w.word}</b> <span class="badge">${w.base_level||""}</span></div>`).join("")
-      : "—";
-  }catch(e){}
-}
-
-// ---- Profile ----
-function toggleProfileEdit(){
-  document.getElementById("profile-edit-box").classList.toggle("hidden");
-}
-async function loadProfileTab(){
-  const u = await api("/api/profile/"+STATE.telegramId);
-  document.getElementById("profile-name-display").textContent = u.nickname || u.name || u.display_id;
-  document.getElementById("profile-id-display").textContent = "ID: " + u.display_id;
-  document.getElementById("profile-nickname").value = u.nickname || "";
-  if(u.avatar_url){ document.getElementById("profile-avatar").src = u.avatar_url; document.getElementById("profile-avatar").style.display = "block"; }
-  loadProgress();
-}
-async function saveProfile(){
-  const nickname = document.getElementById("profile-nickname").value.trim();
-  try{
-    await api("/api/profile/update", {method:"POST", body: JSON.stringify({telegram_id: STATE.telegramId, nickname})});
-    document.getElementById("profile-name-display").textContent = nickname || "—";
-    document.getElementById("home-name").textContent = nickname || "—";
-    document.getElementById("profile-edit-box").classList.add("hidden");
-  }catch(e){ alert("Xatolik: " + e.message); }
-}
-
-async function loadRanking(){
-  const list = await api("/api/ranking");
-  const medal = ["gold","silver","bronze"];
-  document.getElementById("ranking-list").innerHTML = list.length ? list.map((r,i)=>`
-    <div class="rank-row"><span class="pos ${medal[i]||""}">${i<3?["🥇","🥈","🥉"][i]:(i+1)}</span>${r.avatar_url?`<img src="${r.avatar_url}">`:""}<span>${r.nickname||r.display_id}</span><span class="id-tag" style="margin-left:6px;">${r.display_id}</span><span style="margin-left:auto; font-weight:800;">${r.score}</span></div>
-  `).join("") : "—";
-}
-
-async function loadProgress(){
-  try{
-    const p = await api("/api/progress/"+STATE.telegramId);
-    document.getElementById("home-active").textContent = p.active_words;
-    document.getElementById("home-practiced").textContent = p.words_practiced;
-    document.getElementById("home-accuracy").textContent = p.accuracy + "%";
-    document.getElementById("home-credits").textContent = p.credits;
-    document.getElementById("home-rank-pos").textContent = "#" + p.rank_position;
-    const profRank = document.getElementById("profile-rank-pos");
-    if(profRank) profRank.textContent = "#" + p.rank_position;
-    document.getElementById("home-level").textContent = p.level;
-    document.getElementById("status-credits").textContent = p.credits;
-  }catch(e){}
-}
-
-function openBuyCredits() {
-  document.getElementById("buy-credits-box").classList.toggle("hidden");
-}
-
-async function buyCredits(){
-  const credits = parseInt(document.getElementById("credits-amount-input").value);
-  const minCr = STATE.minCreditsPurchase || 100;
-  if(!credits || credits < minCr){
-    alert(`Kamida ${minCr} ta kredit kiriting.`);
-    return;
-  }
-  try{
-    const res = await api(`/api/payment/generate?telegram_id=${STATE.telegramId}&credits=${credits}`, {method:"POST"});
-    STATE.lastPaymentId = res.payment_id;
-    localStorage.setItem("uw_payment", JSON.stringify({id: res.payment_id, endAt: Date.now() + (res.valid_for_mins||5)*60000, amount: res.expected_amount, card: res.card||"", credits: res.credits}));
-    document.getElementById("credits-amount-input").classList.add("hidden");
-    document.getElementById("btn-buy-credits").classList.add("hidden");
-    renderPaymentBox(res.expected_amount, res.card, res.credits);
-    startPaymentWatch();
-  }catch(e){ alert(e.message); }
-}
-
-function renderPaymentBox(amount, card, credits){
-  document.getElementById("payment-box").innerHTML = `
-    <div class="result-ok">
-      <div>${credits} kredit uchun to'lov summasi:</div>
-      <div class="copy-row"><span id="pay-amount">${amount} so'm</span><button onclick="copyText('${amount}')">📋</button></div>
-      ${card ? `<div>Karta raqami:</div><div class="copy-row"><span id="pay-card">${card}</span><button onclick="copyText('${String(card).replace(/'/g,"")}')">📋</button></div>` : ""}
-      <div class="muted" style="margin-top:6px;">Aynan shu summani yuboring — boshqa summa qabul qilinmaydi.</div>
-      <div class="countdown" id="pay-countdown" style="font-size:22px; margin-top:8px;">05:00</div>
-      <div class="muted" id="pay-watch-status" style="text-align:center;">🤖 To'lovingiz avtomatik tekshirilmoqda...</div>
-    </div>
-    <button class="btn success block" style="margin-top:8px;" onclick="markPaid()">To'ladim</button>`;
-}
-
-let paymentWatchTimer = null, paymentCountdownTimer = null;
-function startPaymentWatch(){
-  const saved = JSON.parse(localStorage.getItem("uw_payment") || "null");
-  if(!saved){ return; }
-  STATE.lastPaymentId = saved.id;
-  if(paymentCountdownTimer) clearInterval(paymentCountdownTimer);
-  if(paymentWatchTimer) clearInterval(paymentWatchTimer);
-
-  function tickCountdown(){
-    const diff = saved.endAt - Date.now();
-    const el = document.getElementById("pay-countdown");
-    if(diff <= 0){
-      clearInterval(paymentCountdownTimer); clearInterval(paymentWatchTimer);
-      localStorage.removeItem("uw_payment");
-      const box = document.getElementById("payment-box");
-      if(box) box.innerHTML = `<div class="result-bad">⏰ To'lov vaqti tugadi. Qaytadan urinib ko'ring.</div>`;
-      document.getElementById("credits-amount-input").classList.remove("hidden");
-      document.getElementById("btn-buy-credits").classList.remove("hidden");
-      return;
-    }
-    if(el){
-      const m = String(Math.floor(diff/60000)).padStart(2,"0");
-      const s = String(Math.floor((diff%60000)/1000)).padStart(2,"0");
-      el.textContent = `${m}:${s}`;
-    }
-  }
-  tickCountdown();
-  paymentCountdownTimer = setInterval(tickCountdown, 1000);
-
-  async function checkStatus(){
-    try{
-      const st = await api("/api/payment/status/"+saved.id);
-      if(st.status === "approved"){
-        clearInterval(paymentCountdownTimer); clearInterval(paymentWatchTimer);
-        localStorage.removeItem("uw_payment");
-        const box = document.getElementById("payment-box");
-        if(box) box.innerHTML = `<div class="result-ok">✅ To'lovingiz tasdiqlandi! ${st.credits} kredit qo'shildi.</div>`;
-        document.getElementById("credits-amount-input").classList.remove("hidden");
-        document.getElementById("btn-buy-credits").classList.remove("hidden");
-        loadProgress();
-      }else if(st.status === "expired" || st.status === "rejected"){
-        clearInterval(paymentCountdownTimer); clearInterval(paymentWatchTimer);
-        localStorage.removeItem("uw_payment");
-        const box = document.getElementById("payment-box");
-        if(box) box.innerHTML = `<div class="result-bad">❌ To'lov ${st.status === "expired" ? "muddati tugadi" : "bekor qilindi"}.</div>`;
-        document.getElementById("credits-amount-input").classList.remove("hidden");
-        document.getElementById("btn-buy-credits").classList.remove("hidden");
-      }
-    }catch(e){}
-  }
-  paymentWatchTimer = setInterval(checkStatus, 5000);
-  checkStatus();
-}
-
-function restorePendingPayment(){
-  const saved = JSON.parse(localStorage.getItem("uw_payment") || "null");
-  if(saved && saved.endAt > Date.now()){
-    document.getElementById("buy-credits-box").classList.remove("hidden");
-    document.getElementById("credits-amount-input").classList.add("hidden");
-    document.getElementById("btn-buy-credits").classList.add("hidden");
-    renderPaymentBox(saved.amount, saved.card, saved.credits);
-    startPaymentWatch();
-  }else if(saved){
-    localStorage.removeItem("uw_payment");
-  }
-}
-function copyText(text){
-  navigator.clipboard?.writeText(text).then(()=>{}).catch(()=>{
-    const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select();
-    document.execCommand("copy"); document.body.removeChild(ta);
-  });
-}
-async function markPaid(){
-  try{
-    await api("/api/payment/mark-paid/"+STATE.lastPaymentId, {method:"POST"});
-    const st = document.getElementById("pay-watch-status");
-    if(st) st.textContent = "🤖 To'lovingiz avtomatik tekshirilmoqda... (admin ham tasdiqlashi mumkin)";
-  }catch(e){ alert(e.message); }
-}
-
-// ---- Global klaviatura yopish paneli ----
-function closeAnyKeyboard(){
-  if(document.activeElement) document.activeElement.blur();
-  document.getElementById("keyboard-done-bar").classList.remove("visible");
-}
-document.addEventListener("focusin", function(e){
-  if(e.target.matches("input,textarea")) document.getElementById("keyboard-done-bar").classList.add("visible");
-});
-document.addEventListener("focusout", function(e){
-  if(e.target.matches("input,textarea")){
-    setTimeout(function(){
-      const a = document.activeElement;
-      if(!a || !a.matches("input,textarea")) document.getElementById("keyboard-done-bar").classList.remove("visible");
-    }, 120);
-  }
-});
-
-// ---- Init ----
-(async function init(){
-  await loadPublicSettings();
-  const hasUser = initTelegram();
-  applyI18n();
-  if(hasUser){
-    await checkSubscriptionGate();
-    await loginAndLoad();
-  }else{
-    document.getElementById("app-root").classList.remove("hidden");
-  }
-})();
 </script>
 </body>
 </html>
