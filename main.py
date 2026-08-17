@@ -10,9 +10,9 @@ from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import CommandStart
 from aiogram.types import FSInputFile, ReplyKeyboardMarkup, KeyboardButton
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
-ADMIN_ID = int(os.environ.get("ADMIN_ID", "0"))
-DB_FILE = os.environ.get("DB_FILE", "unlockword_data.db")
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "8667568468:AAGtXf0m4vfYCN61v7t5RdSwZ6fdzmDpwrw")
+ADMIN_ID = int(os.environ.get("ADMIN_ID", "8996452952"))
+DBFILE = os.environ.get("DB_FILE", "unlockword_data.db")
 BATCH_SIZE = 20
 MAX_RETRIES = 3
 RATE_LIMIT_COOLDOWN = 60          # seconds a rate-limited key is skipped for
