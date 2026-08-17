@@ -15,7 +15,7 @@ ADMIN_ID = int(os.environ.get("ADMIN_ID", "8996452952"))
 DB_FILE = os.environ.get("DB_FILE", "unlockword_data.db")
 BATCH_SIZE = 20
 MAX_RETRIES = 3
-# ===============================================
+# ===============================================           
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -27,7 +27,7 @@ def init_db():
     c = conn.cursor()
     c.execute("""
         CREATE TABLE IF NOT EXISTS settings (
-            key TEXT PRIMARY KEY,
+ key TEXT PRIMARY KEY,
             value TEXT
         )
     """)
@@ -115,13 +115,11 @@ def _extract_json_array(raw_text: str, provider_label: str) -> List[Dict[str, An
 async def process_batch_with_gemini(words_batch: List[Dict[str, Any]], api_key: str) -> List[Dict[str, Any]]:
     words_text = ", ".join([f"{item['word']} (base level: {item.get('level') or 'unknown'})" for item in words_batch])
     prompt = f"{SYSTEM_PROMPT}\n\nWords to process:\n{words_text}"
-
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {"temperature": 0.2, "responseMimeType": "application/json"}
     }
-
     async with aiohttp.ClientSession() as session:
         async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=90)) as resp:
             if resp.status == 429: raise Exception("RATE_LIMIT")
@@ -147,7 +145,6 @@ async def process_batch_with_anthropic(words_batch: List[Dict[str, Any]], api_ke
     url = "https://api.anthropic.com/v1/messages"
     headers = {"x-api-key": api_key, "anthropic-version": "2023-06-01", "Content-Type": "application/json"}
     payload = {"model": "claude-3-haiku-20240307", "max_tokens": 4096, "messages": [{"role": "user", "content": prompt}]}
-
     async with aiohttp.ClientSession() as session:
         async with session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=90)) as resp:
             if resp.status == 429: raise Exception("RATE_LIMIT")
@@ -166,7 +163,6 @@ async def process_batch_openai_compatible(words_batch: List[Dict[str, Any]], api
     payload = {"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0.2}
     if use_json_mode:
         payload["response_format"] = {"type": "json_object"}
-
     async with aiohttp.ClientSession() as session:
         async with session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=90)) as resp:
             if resp.status == 429: raise Exception("RATE_LIMIT")
@@ -183,13 +179,11 @@ def _oai(url, model, label):
         return await process_batch_openai_compatible(words_batch, api_key, url, model, label)
     return handler
 
-# ================= YANGILANGAN PROVIDERLAR (FIXED) =================
 PROVIDERS = {
     "gemini": (process_batch_with_gemini, ["AIzaSy", "AQ."]),
     "groq": (process_batch_with_groq, ["gsk_"]),
     "anthropic": (process_batch_with_anthropic, ["sk-ant-"]),
-    # OpenRouter: "free" qo'shimchasi olib tashlandi va ishonchli model qo'yildi
-    "openrouter": (_oai("https://openrouter.ai/api/v1/chat/completions", "google/gemini-2.0-flash-lite-preview-02-05:free", "OpenRouter"), ["sk-or-"]),
+    "openrouter": (_oai("https://openrouter.ai/api/v1/chat/completions",free "google/gemini-2",.0-flash-lite-preview-02-05: "OpenRouter"), ["sk-or-"]),
     "huggingface": (_oai("https://router.huggingface.co/v1/chat/completions", "meta-llama/Llama-3.1-8B-Instruct", "HuggingFace"), ["hf_"]),
     "nvidia": (_oai("https://integrate.api.nvidia.com/v1/chat/completions", "meta/llama-3.3-70b-instruct", "NVIDIA NIM"), ["nvapi-"]),
     "mistral": (_oai("https://api.mistral.ai/v1/chat/completions", "mistral-large-latest", "Mistral"), []),
@@ -212,7 +206,6 @@ PROVIDER_LIST_TEXT = (
     "• mistral, deepseek, fireworks, cerebras, together\n\n"
     "Masalan: `/setprovider mistral AbCdEf123...`"
 )
-
 
 # ================= WORKER LOOP =================
 async def worker_loop():
@@ -421,6 +414,44 @@ async def finish_and_send_file():
         caption=f"✅ **Baza tayyor!**\n\nJami: {len(final_output)} ta yozuv."
     )
 
+# ================= YANGI: YUKLAB OLISH FUNKSIYALARI =================
+@dp.message(F.text == "/download")
+async def download_backup(message: types.Message):
+    if not is_admin(message.from_user.id):
+        return
+    
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT word FROM words_queue WHERE status = 'pending'")
+    pending = [r[0] for r in c.fetchall()]
+    c.execute("SELECT word FROM words_queue WHERE status = 'skipped'")
+    skipped = [r[0] for r in c.fetchall()]
+    conn.close()
+
+    if not pending and not skipped:
+        await message.answer("📭 Yuklab olish uchun hech qanday kutilayotgan yoki o'tkazib yuborilgan so'z yo'q.")
+        return
+
+    # Tugallanmagan ishlarni faylga yozamiz
+    filename = "unfinished_words.json"
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump({
+            "pending": pending,
+            "skipped": skipped,
+            "total_pending": len(pending),
+            "total_skipped": len(skipped)
+        }, f, ensure_ascii=False, indent=2)
+
+    doc = FSInputFile(filename)
+    await bot.send_document(
+        ADMIN_ID,
+        doc,
+        caption=f"📥 **Hozirgi holat yuklandi!**\n\n⏳ Kutilayotgan: {len(pending)} ta\n⚠️ O'tkazib yuborilgan: {len(skipped)} ta"
+    )
+    
+    if os.path.exists(filename):
+        os.remove(filename)
+
 # ================= HANDLERS =================
 @dp.message(CommandStart())
 async def cmd_start(message: types.Message):
@@ -436,7 +467,8 @@ async def cmd_start(message: types.Message):
     await message.answer(
         "👋 **UnlockWord Generator Botiga xush kelibsiz!**\n\n"
         "1. `.json` faylni botga yuboring.\n"
-        "2. API kalitingizni xabar sifatida yuboring.",
+        "2. API kalitingizni xabar sifatida yuboring.\n\n"
+        "📥 **Yangi buyruq:** `/download` — hozirgi oraliq holatni yuklab olish.",
         reply_markup=kb
     )
 
@@ -465,7 +497,8 @@ async def check_status(message: types.Message):
         f"✅ Bajarildi: {done} ta\n"
         f"⏳ Qoldi: {total - done - skipped} ta\n"
         f"⚠️ O'tkazib yuborildi (skipped): {skipped} ta\n"
-        f"📑 Yaratilgan qatorlar: {res_count} ta"
+        f"📑 Yaratilgan qatorlar: {res_count} ta\n\n"
+        f"💡 Agar oraliq ma'lumot kerak bo'lsa, /download yuboring."
     )
 
 @dp.message(F.text == "🛑 To'xtatish")
@@ -485,7 +518,6 @@ async def resume_process(message: types.Message):
 
 @dp.message(F.text == "🔄 Qayta tiklash (skipped)")
 async def reset_skipped(message: types.Message):
-    """Yangi funksiya: O'tkazib yuborilgan so'zlarni qayta navbatga qo'yadi"""
     if not is_admin(message.from_user.id):
         return
     conn = sqlite3.connect(DB_FILE)
@@ -519,11 +551,19 @@ async def handle_document(message: types.Message):
 
         conn = sqlite3.connect(DB_FILE)
         c = conn.cursor()
-        c.execute("DELETE FROM words_queue")
-        c.execute("DELETE FROM results")
-
+        
+        # 🔥 YANGILANDI: Endi eski ma'lumotlarni O'CHIRMAYDI, faqat QO'SHADI
         inserted = 0
         seen_words = set()
+        
+        # Avval bazadagi mavjud so'zlarni o'qib olamiz (dublikat oldini olish uchun)
+        c.execute("SELECT LOWER(word) FROM words_queue")
+        for row in c.fetchall():
+            seen_words.add(row[0])
+        c.execute("SELECT LOWER(word) FROM results")
+        for row in c.fetchall():
+            seen_words.add(row[0])
+
         for item in data:
             word = item.get("word")
             level = item.get("level", "A1")
@@ -544,7 +584,7 @@ async def handle_document(message: types.Message):
         set_setting("last_alert_step", "0")
         resume_event.set()
 
-        await message.answer(f"✅ Baza yuklandi! Jami **{inserted}** ta so'z navbatga qo'yildi.")
+        await message.answer(f"✅ Baza yangilandi! Jami **{inserted}** ta yangi so'z navbatga qo'yildi.")
     except Exception as e:
         await message.answer(f"❌ Xatolik: {e}")
 
@@ -578,7 +618,6 @@ async def set_provider_manual(message: types.Message):
 async def handle_text(message: types.Message):
     if not is_admin(message.from_user.id):
         return
-
     text = message.text.strip()
     if text.startswith("/setkey "):
         text = text.split(" ", 1)[1].strip()
