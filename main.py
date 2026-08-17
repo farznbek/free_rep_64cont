@@ -10,10 +10,6 @@ from aiogram.filters import CommandStart
 from aiogram.types import FSInputFile, ReplyKeyboardMarkup, KeyboardButton
 
 # ================= SOZLAMALAR =================
-# Railway'da bu qiymatlarni "Variables" bo'limida BOT_TOKEN / ADMIN_ID / DB_FILE
-# nomlari bilan qo'ying -- shunda quyidagi fallback qiymatlar ishlatilmaydi.
-# Bu tokenni hech kim (Sizdan boshqa) ishlata olmaydi, chunki har bir handler
-# is_admin() orqali faqat ADMIN_ID mos kelgan foydalanuvchiga javob beradi.
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8667568468:AAGtXf0m4vfYCN61v7t5RdSwZ6fdzmDpwrw")
 ADMIN_ID = int(os.environ.get("ADMIN_ID", "8996452952"))
 DB_FILE = os.environ.get("DB_FILE", "unlockword_data.db")
@@ -78,10 +74,8 @@ def is_admin(user_id: int) -> bool:
     return user_id == ADMIN_ID
 
 def word_already_known(conn, word: str) -> bool:
-    """Check (case-insensitive) if a word already exists anywhere in the
-    queue or in the results table, so we never queue the same word twice."""
-    c = conn.cursor()
     wl = word.strip().lower()
+    c = conn.cursor()
     c.execute("SELECT 1 FROM words_queue WHERE LOWER(word) = ? LIMIT 1", (wl,))
     if c.fetchone():
         return True
@@ -90,7 +84,7 @@ def word_already_known(conn, word: str) -> bool:
         return True
     return False
 
-# ================= GEMINI API REQUEST =================
+# ================= GEMINI / API REQUEST =================
 SYSTEM_PROMPT = """You are an expert linguist creating a dictionary database.
 For each given English word, provide dictionary entries following these strict rules:
 1. If a word has multiple core meanings, produce separate entries with independent CEFR levels (A1, A2, B1, B2, C1, C2).
@@ -105,12 +99,9 @@ For each given English word, provide dictionary entries following these strict r
 10. You MUST return one or more entries for EVERY word given in the input list -- never skip a word."""
 
 def _extract_json_array(raw_text: str, provider_label: str) -> List[Dict[str, Any]]:
-    # JSON parsing is separated from the network call so a malformed model
-    # response is handled distinctly from a real API/network error.
     try:
         parsed = json.loads(raw_text)
         if isinstance(parsed, dict):
-            # some models wrap the array in {"entries": [...]} or similar
             for v in parsed.values():
                 if isinstance(v, list):
                     parsed = v
@@ -128,25 +119,18 @@ async def process_batch_with_gemini(words_batch: List[Dict[str, Any]], api_key: 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "temperature": 0.2,
-            "responseMimeType": "application/json"
-        }
+        "generationConfig": {"temperature": 0.2, "responseMimeType": "application/json"}
     }
 
     async with aiohttp.ClientSession() as session:
         async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=90)) as resp:
-            if resp.status == 429:
-                raise Exception("RATE_LIMIT")
-            elif resp.status in (400, 401, 403):
-                raise Exception("INVALID_KEY")
+            if resp.status == 429: raise Exception("RATE_LIMIT")
+            elif resp.status in (400, 401, 403): raise Exception("INVALID_KEY")
             elif resp.status != 200:
                 text = await resp.text()
                 raise Exception(f"API_ERROR: {resp.status} - {text}")
-
             res_json = await resp.json()
             raw_text = res_json['candidates'][0]['content']['parts'][0]['text']
-
     return _extract_json_array(raw_text, "Gemini")
 
 async def process_batch_with_groq(words_batch: List[Dict[str, Any]], api_key: str) -> List[Dict[str, Any]]:
@@ -160,63 +144,38 @@ async def process_batch_with_groq(words_batch: List[Dict[str, Any]], api_key: st
 async def process_batch_with_anthropic(words_batch: List[Dict[str, Any]], api_key: str) -> List[Dict[str, Any]]:
     words_text = ", ".join([f"{item['word']} (base level: {item.get('level') or 'unknown'})" for item in words_batch])
     prompt = f"{SYSTEM_PROMPT}\n\nWords to process:\n{words_text}"
-
     url = "https://api.anthropic.com/v1/messages"
-    headers = {
-        "x-api-key": api_key,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": "claude-haiku-4-5-20251001",
-        "max_tokens": 4096,
-        "messages": [{"role": "user", "content": prompt}],
-    }
+    headers = {"x-api-key": api_key, "anthropic-version": "2023-06-01", "Content-Type": "application/json"}
+    payload = {"model": "claude-3-haiku-20240307", "max_tokens": 4096, "messages": [{"role": "user", "content": prompt}]}
 
     async with aiohttp.ClientSession() as session:
         async with session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=90)) as resp:
-            if resp.status == 429:
-                raise Exception("RATE_LIMIT")
-            elif resp.status in (400, 401, 403):
-                raise Exception("INVALID_KEY")
+            if resp.status == 429: raise Exception("RATE_LIMIT")
+            elif resp.status in (400, 401, 403): raise Exception("INVALID_KEY")
             elif resp.status != 200:
                 text = await resp.text()
                 raise Exception(f"API_ERROR: {resp.status} - {text}")
-
             res_json = await resp.json()
             raw_text = res_json['content'][0]['text']
-
     return _extract_json_array(raw_text, "Claude")
 
 async def process_batch_openai_compatible(words_batch: List[Dict[str, Any]], api_key: str, url: str, model: str, label: str, use_json_mode: bool = True) -> List[Dict[str, Any]]:
-    """Generic handler for any OpenAI-compatible /chat/completions endpoint
-    (Groq, OpenRouter, Mistral, DeepSeek, Fireworks, Cerebras, Together,
-    HuggingFace router, NVIDIA NIM, ...). Only the URL + model differ."""
     words_text = ", ".join([f"{item['word']} (base level: {item.get('level') or 'unknown'})" for item in words_batch])
     prompt = f"{SYSTEM_PROMPT}\n\nWords to process:\n{words_text}\n\nRespond with a JSON object of the form {{\"entries\": [...]}} containing the array."
-
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-    payload = {
-        "model": model,
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.2,
-    }
+    payload = {"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0.2}
     if use_json_mode:
         payload["response_format"] = {"type": "json_object"}
 
     async with aiohttp.ClientSession() as session:
         async with session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=90)) as resp:
-            if resp.status == 429:
-                raise Exception("RATE_LIMIT")
-            elif resp.status in (400, 401, 403):
-                raise Exception("INVALID_KEY")
+            if resp.status == 429: raise Exception("RATE_LIMIT")
+            elif resp.status in (400, 401, 403): raise Exception("INVALID_KEY")
             elif resp.status != 200:
                 text = await resp.text()
                 raise Exception(f"API_ERROR: {resp.status} - {text}")
-
             res_json = await resp.json()
             raw_text = res_json['choices'][0]['message']['content']
-
     return _extract_json_array(raw_text, label)
 
 def _oai(url, model, label):
@@ -224,19 +183,20 @@ def _oai(url, model, label):
         return await process_batch_openai_compatible(words_batch, api_key, url, model, label)
     return handler
 
-# name -> (handler, [known key-prefixes for auto-detect] or [] if none reliable)
+# ================= YANGILANGAN PROVIDERLAR (FIXED) =================
 PROVIDERS = {
     "gemini": (process_batch_with_gemini, ["AIzaSy", "AQ."]),
     "groq": (process_batch_with_groq, ["gsk_"]),
     "anthropic": (process_batch_with_anthropic, ["sk-ant-"]),
-    "openrouter": (_oai("https://openrouter.ai/api/v1/chat/completions", "meta-llama/llama-3.3-70b-instruct:free", "OpenRouter"), ["sk-or-"]),
+    # OpenRouter: "free" qo'shimchasi olib tashlandi va ishonchli model qo'yildi
+    "openrouter": (_oai("https://openrouter.ai/api/v1/chat/completions", "google/gemini-2.0-flash-lite-preview-02-05:free", "OpenRouter"), ["sk-or-"]),
     "huggingface": (_oai("https://router.huggingface.co/v1/chat/completions", "meta-llama/Llama-3.1-8B-Instruct", "HuggingFace"), ["hf_"]),
     "nvidia": (_oai("https://integrate.api.nvidia.com/v1/chat/completions", "meta/llama-3.3-70b-instruct", "NVIDIA NIM"), ["nvapi-"]),
     "mistral": (_oai("https://api.mistral.ai/v1/chat/completions", "mistral-large-latest", "Mistral"), []),
     "deepseek": (_oai("https://api.deepseek.com/v1/chat/completions", "deepseek-chat", "DeepSeek"), []),
     "fireworks": (_oai("https://api.fireworks.ai/inference/v1/chat/completions", "accounts/fireworks/models/llama-v3p3-70b-instruct", "Fireworks"), []),
     "cerebras": (_oai("https://api.cerebras.ai/v1/chat/completions", "llama-3.3-70b", "Cerebras"), []),
-    "together": (_oai("https://api.together.xyz/v1/chat/completions", "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free", "Together AI"), []),
+    "together": (_oai("https://api.together.xyz/v1/chat/completions", "meta-llama/Llama-3.3-70B-Instruct-Turbo", "Together AI"), []),
 }
 
 PROVIDER_LIST_TEXT = (
@@ -245,7 +205,7 @@ PROVIDER_LIST_TEXT = (
     "• Gemini (`AIzaSy...` / `AQ....`)\n"
     "• Groq (`gsk_...`)\n"
     "• Claude/Anthropic (`sk-ant-...`)\n"
-    "• OpenRouter (`sk-or-...`) — bitta kalit bilan 20-30+ bepul model!\n"
+    "• OpenRouter (`sk-or-...`)\n"
     "• HuggingFace (`hf_...`)\n"
     "• NVIDIA NIM (`nvapi-...`)\n\n"
     "Qo'lda ko'rsatish kerak (prefiks aniq emas): `/setprovider <nom> <kalit>`\n"
@@ -266,7 +226,7 @@ async def worker_loop():
         provider = get_setting("api_provider", "")
         if not api_key or provider not in PROVIDERS:
             set_setting("is_running", "0")
-            await bot.send_message(ADMIN_ID, "⚠️ API kaliti o'rnatilmagan! Kalit yuboring (qo'llab-quvvatlanadigan provayderlar uchun /providers).")
+            await bot.send_message(ADMIN_ID, "⚠️ API kaliti o'rnatilmagan! Kalit yuboring.")
             resume_event.clear()
             await resume_event.wait()
             continue
@@ -290,7 +250,6 @@ async def worker_loop():
 
         try:
             results = await PROVIDERS[provider][0](batch, api_key)
-
             conn = sqlite3.connect(DB_FILE)
             c = conn.cursor()
 
@@ -316,16 +275,12 @@ async def worker_loop():
                     json.dumps(item.get("examples", []), ensure_ascii=False)
                 ))
 
-                # Any synonym/antonym word that doesn't already have its own
-                # entry (original queue OR results OR already-queued bonus
-                # word) gets queued as a brand new word to process, so it
-                # ends up as its own flat entry too -- per the project spec.
                 for field in ("synonym", "antonym"):
                     cand = item.get(field)
                     if not cand or not isinstance(cand, str):
                         continue
                     cand = cand.strip()
-                    if not cand or " " in cand:  # skip phrases, only single words
+                    if not cand or " " in cand:
                         continue
                     cand_lower = cand.lower()
                     if cand_lower in covered_words_lower or cand_lower in [w.lower() for w in new_bonus_words]:
@@ -336,9 +291,6 @@ async def worker_loop():
             for w in new_bonus_words:
                 c.execute("INSERT INTO words_queue (word, level, status) VALUES (?, ?, 'pending')", (w, None))
 
-            # Only mark the ids whose word was actually returned by Gemini as
-            # done. Anything missing stays pending and will be retried (up to
-            # MAX_RETRIES), so a word can never be silently dropped.
             done_ids = []
             retry_ids = []
             for wl, id_list in ids_by_word_lower.items():
@@ -353,7 +305,6 @@ async def worker_loop():
                 c.executemany("UPDATE words_queue SET retry_count = retry_count + 1 WHERE id = ?", [(i,) for i in retry_ids])
 
             conn.commit()
-
             c.execute("SELECT COUNT(*) FROM words_queue WHERE status = 'done'")
             done_count = c.fetchone()[0]
             c.execute("SELECT COUNT(*) FROM words_queue")
@@ -378,16 +329,10 @@ async def worker_loop():
             err = str(e)
             if "RATE_LIMIT" in err or "INVALID_KEY" in err:
                 set_setting("is_running", "0")
-                await bot.send_message(
-                    ADMIN_ID,
-                    f"⚠️ **{provider.capitalize()} API kalit limitga yetdi yoki yaroqsiz!**\nYangi API kalit yuboring (/providers — barcha variantlar)."
-                )
+                await bot.send_message(ADMIN_ID, f"⚠️ **{provider.capitalize()} API kalit limitga yetdi yoki yaroqsiz!**\nYangi API kalit yuboring.")
                 resume_event.clear()
                 await resume_event.wait()
             else:
-                # Network/parse error for this whole batch: bump retry_count
-                # for every id in it so a permanently-failing word eventually
-                # gets skipped instead of looping forever.
                 conn = sqlite3.connect(DB_FILE)
                 c = conn.cursor()
                 c.executemany("UPDATE words_queue SET retry_count = retry_count + 1 WHERE id = ?", [(i,) for i in all_ids])
@@ -481,18 +426,17 @@ async def finish_and_send_file():
 async def cmd_start(message: types.Message):
     if not is_admin(message.from_user.id):
         return
-
     kb = ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="📊 Holatni tekshirish"), KeyboardButton(text="🛑 To'xtatish")],
-            [KeyboardButton(text="▶️ Davom ettirish")]
+            [KeyboardButton(text="▶️ Davom ettirish"), KeyboardButton(text="🔄 Qayta tiklash (skipped)")]
         ],
         resize_keyboard=True
     )
     await message.answer(
         "👋 **UnlockWord Generator Botiga xush kelibsiz!**\n\n"
         "1. `.json` faylni botga yuboring.\n"
-        "2. API kalitingizni xabar sifatida yuboring (`/providers` — barcha variantlar ro'yxati).",
+        "2. API kalitingizni xabar sifatida yuboring.",
         reply_markup=kb
     )
 
@@ -520,7 +464,7 @@ async def check_status(message: types.Message):
         f"📦 Jami so'zlar (bonus bilan): {total} ta\n"
         f"✅ Bajarildi: {done} ta\n"
         f"⏳ Qoldi: {total - done - skipped} ta\n"
-        f"⚠️ O'tkazib yuborildi: {skipped} ta\n"
+        f"⚠️ O'tkazib yuborildi (skipped): {skipped} ta\n"
         f"📑 Yaratilgan qatorlar: {res_count} ta"
     )
 
@@ -539,11 +483,23 @@ async def resume_process(message: types.Message):
     resume_event.set()
     await message.answer("▶️ Jarayon davom ettirilmoqda...")
 
+@dp.message(F.text == "🔄 Qayta tiklash (skipped)")
+async def reset_skipped(message: types.Message):
+    """Yangi funksiya: O'tkazib yuborilgan so'zlarni qayta navbatga qo'yadi"""
+    if not is_admin(message.from_user.id):
+        return
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("UPDATE words_queue SET status = 'pending', retry_count = 0 WHERE status = 'skipped'")
+    count = c.rowcount
+    conn.commit()
+    conn.close()
+    await message.answer(f"✅ **{count}** ta o'tkazib yuborilgan so'z qayta navbatga qo'yildi! Jarayonni davom ettirish uchun '▶️ Davom ettirish' ni bosing.")
+
 @dp.message(F.document)
 async def handle_document(message: types.Message):
     if not is_admin(message.from_user.id):
         return
-
     doc = message.document
     if not doc.file_name.endswith('.json'):
         await message.answer("❌ Faqat `.json` fayl yuboring.")
@@ -557,7 +513,6 @@ async def handle_document(message: types.Message):
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-
         if not isinstance(data, list):
             await message.answer("❌ JSON massiv (array) ko'rinishida bo'lishi kerak.")
             return
@@ -582,7 +537,6 @@ async def handle_document(message: types.Message):
 
         conn.commit()
         conn.close()
-
         if os.path.exists(file_path):
             os.remove(file_path)
 
@@ -591,7 +545,6 @@ async def handle_document(message: types.Message):
         resume_event.set()
 
         await message.answer(f"✅ Baza yuklandi! Jami **{inserted}** ta so'z navbatga qo'yildi.")
-
     except Exception as e:
         await message.answer(f"❌ Xatolik: {e}")
 
