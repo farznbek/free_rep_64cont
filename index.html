@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Telegram iOS Liquid Glass Bar</title>
+  <title>Telegram Real iOS Liquid Glass</title>
   <style>
     * {
       box-sizing: border-box;
@@ -13,90 +13,78 @@
     }
 
     body {
-      background: #000000;
+      background: radial-gradient(circle at 50% 80%, #1e1035 0%, #08070d 100%);
       display: flex;
       justify-content: center;
       align-items: flex-end;
       min-height: 100vh;
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
       overflow: hidden;
     }
 
     /* Pastki panel orqa foni */
-    .tab-bar-wrapper {
+    .tab-bar-container {
       position: relative;
       width: 94%;
-      max-width: 430px;
+      max-width: 420px;
       margin-bottom: 28px;
     }
 
     .tab-bar {
       position: relative;
       display: flex;
-      background: rgba(26, 29, 36, 0.75);
-      backdrop-filter: blur(35px) saturate(190%);
-      -webkit-backdrop-filter: blur(35px) saturate(190%);
-      border: 0.5px solid rgba(255, 255, 255, 0.12);
+      background: rgba(20, 20, 26, 0.65);
+      backdrop-filter: blur(40px) saturate(210%);
+      -webkit-backdrop-filter: blur(40px) saturate(210%);
+      border: 0.5px solid rgba(255, 255, 255, 0.08);
       padding: 5px;
-      border-radius: 36px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), inset 0 0.5px 1px rgba(255, 255, 255, 0.25);
+      border-radius: 38px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.15);
       touch-action: none;
     }
 
-    /* Suyuq Shisha Kapsula (Telegram Liquid Glass Capsule) */
-    .liquid-capsule {
+    /* Haqiqiy Shaffof Suyuq Oyna (Liquid Glass Capsule) */
+    .liquid-glass {
       position: absolute;
       top: 5px;
       left: 0;
       height: calc(100% - 10px);
-      border-radius: 28px;
+      border-radius: 30px;
       pointer-events: none;
       z-index: 1;
 
-      /* Shisha va yorug'lik effektlari */
-      background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.28) 0%,
-        rgba(255, 255, 255, 0.08) 50%,
-        rgba(255, 255, 255, 0.18) 100%
-      );
-      backdrop-filter: blur(18px) brightness(1.2);
-      -webkit-backdrop-filter: blur(18px) brightness(1.2);
-      
-      border: 1px solid rgba(255, 255, 255, 0.35);
-      border-top: 1.5px solid rgba(255, 255, 255, 0.55);
+      /* Mutlaqo oq emas: faqat xiralashtiruvchi shaffof shisha */
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(30px) saturate(180%) brightness(1.15);
+      -webkit-backdrop-filter: blur(30px) saturate(180%) brightness(1.15);
+
+      /* Shisha qirralari va nozik nuri */
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-top: 1.2px solid rgba(255, 255, 255, 0.28);
+      border-bottom: 0.8px solid rgba(255, 255, 255, 0.06);
 
       box-shadow: 
-        0 8px 25px rgba(0, 0, 0, 0.35),
-        inset 0 2px 4px rgba(255, 255, 255, 0.6),
-        inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+        0 10px 30px rgba(0, 0, 0, 0.35),
+        inset 0 1.5px 2px rgba(255, 255, 255, 0.25),
+        inset 0 -1.5px 2px rgba(0, 0, 0, 0.3);
 
-      /* Telegram uslubidagi o'ta silliq Spring fizika */
-      transition: transform 0.52s cubic-bezier(0.19, 1, 0.22, 1),
-                  width 0.52s cubic-bezier(0.19, 1, 0.22, 1),
-                  border-radius 0.3s ease;
+      /* iOS Apple Spring tebranishi */
+      transition: transform 0.48s cubic-bezier(0.2, 1, 0.22, 1),
+                  width 0.48s cubic-bezier(0.2, 1, 0.22, 1),
+                  box-shadow 0.25s ease;
       will-change: transform, width;
+      transform-origin: center center;
     }
 
-    /* Shisha ichidagi yorug'lik nuri (Prisma tovlanishi) */
-    .liquid-capsule::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.4), transparent 60%);
-      opacity: 0.8;
-    }
-
-    .liquid-capsule.dragging {
-      transition: width 0.15s ease-out; /* Barmoq ostida kechikmasdan silliq yurishi */
-      background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.35) 0%,
-        rgba(255, 255, 255, 0.12) 100%
-      );
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45), inset 0 2px 6px rgba(255, 255, 255, 0.8);
+    /* Bosib turganda kattalashish va cho'zilish */
+    .liquid-glass.pressed {
+      background: rgba(255, 255, 255, 0.07);
+      box-shadow: 
+        0 14px 35px rgba(0, 0, 0, 0.5),
+        inset 0 2px 3px rgba(255, 255, 255, 0.35),
+        inset 0 -2px 3px rgba(0, 0, 0, 0.35);
+      transition: none; /* Barmoq ostida darhol reaksiya berishi uchun */
     }
 
     /* Tab Tugmalari */
@@ -112,15 +100,15 @@
       outline: none;
       cursor: pointer;
       z-index: 2;
-      color: #8e8e93;
-      transition: color 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+      color: #7c7c84;
+      transition: color 0.3s ease;
     }
 
     .icon-box {
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
     .icon-box svg {
@@ -141,25 +129,25 @@
       transition: transform 0.3s ease;
     }
 
-    /* Faol Tab */
+    /* Faol Tab rangi va kattalashishi */
     .tab-btn.active {
-      color: #007aff; /* Telegram ko'k rangi */
+      color: #38bdf8; /* Telegram ko'k/moviy rangi */
     }
 
     .tab-btn.active .icon-box {
-      transform: scale(1.12);
+      transform: scale(1.1);
     }
 
     .tab-btn.active svg {
-      stroke: #007aff;
+      stroke: #38bdf8;
     }
   </style>
 </head>
 <body>
 
-  <div class="tab-bar-wrapper">
+  <div class="tab-bar-container">
     <div class="tab-bar" id="tabBar">
-      <div class="liquid-capsule" id="capsule"></div>
+      <div class="liquid-glass" id="liquidGlass"></div>
 
       <button class="tab-btn active" data-index="0">
         <div class="icon-box">
@@ -200,79 +188,99 @@
 
   <script>
     const tabBar = document.getElementById('tabBar');
-    const capsule = document.getElementById('capsule');
+    const glass = document.getElementById('liquidGlass');
     const tabs = Array.from(document.querySelectorAll('.tab-btn'));
     
-    let currentIndex = 0;
-    let isDragging = false;
-    let startX = 0;
+    let activeIndex = 0;
+    let isPressed = false;
+    let startTouchX = 0;
+    let lastTouchX = 0;
 
-    function renderCapsule(index, isSmooth = true) {
-      currentIndex = Math.max(0, Math.min(index, tabs.length - 1));
-      
-      tabs.forEach((tab, i) => {
-        tab.classList.toggle('active', i === currentIndex);
-      });
-
-      const targetTab = tabs[currentIndex];
-      const targetRect = targetTab.getBoundingClientRect();
+    function getTabLayout(index) {
+      const tab = tabs[index];
+      const tabRect = tab.getBoundingClientRect();
       const barRect = tabBar.getBoundingClientRect();
-
-      const left = targetRect.left - barRect.left;
-      const width = targetRect.width;
-
-      if (isSmooth) {
-        capsule.classList.remove('dragging');
-      }
-
-      capsule.style.width = `${width}px`;
-      capsule.style.transform = `translateX(${left}px)`;
+      return {
+        left: tabRect.left - barRect.left,
+        width: tabRect.width
+      };
     }
 
-    // Bosganda yumshoq o'tish
-    tabs.forEach((tab, index) => {
-      tab.addEventListener('pointerdown', (e) => {
-        isDragging = true;
-        startX = e.clientX;
-        renderCapsule(index, true);
+    function setTab(index, animate = true) {
+      activeIndex = Math.max(0, Math.min(index, tabs.length - 1));
+      
+      tabs.forEach((tab, i) => {
+        tab.classList.toggle('active', i === activeIndex);
       });
-    });
 
-    // Barmoq bilan surish (Mayin suyuq cho'zilish)
-    window.addEventListener('pointermove', (e) => {
-      if (!isDragging) return;
+      const { left, width } = getTabLayout(activeIndex);
 
-      capsule.classList.add('dragging');
-
-      const barRect = tabBar.getBoundingClientRect();
-      const touchX = Math.max(barRect.left, Math.min(e.clientX, barRect.right));
-      const relativeX = touchX - barRect.left;
-      const tabWidth = barRect.width / tabs.length;
-
-      // Barmoq ostidagi index
-      const hoverIndex = Math.floor(relativeX / tabWidth);
-      if (hoverIndex >= 0 && hoverIndex < tabs.length && hoverIndex !== currentIndex) {
-        currentIndex = hoverIndex;
-        tabs.forEach((tab, i) => tab.classList.toggle('active', i === currentIndex));
+      if (animate) {
+        glass.classList.remove('pressed');
       }
 
-      // Suyuq shisha cho'zilishi (Stretching formula)
-      const centerPos = relativeX - (tabWidth / 2);
-      const stretchWidth = tabWidth * 1.25; // Yon tomonga yengil kengayishi
-      const finalLeft = Math.max(5, Math.min(centerPos - (stretchWidth - tabWidth) / 2, barRect.width - stretchWidth - 5));
+      glass.style.width = `${width}px`;
+      glass.style.transform = `translateX(${left}px) scale(1, 1)`;
+    }
 
-      capsule.style.width = `${stretchWidth}px`;
-      capsule.style.transform = `translateX(${finalLeft}px)`;
+    // Tugma bosilganda
+    tabBar.addEventListener('pointerdown', (e) => {
+      isPressed = true;
+      startTouchX = e.clientX;
+      lastTouchX = e.clientX;
+      
+      glass.classList.add('pressed');
+      
+      const barRect = tabBar.getBoundingClientRect();
+      const clickRelativeX = e.clientX - barRect.left;
+      const tabWidth = barRect.width / tabs.length;
+      const targetIndex = Math.floor(clickRelativeX / tabWidth);
+      
+      setTab(targetIndex, false);
+      
+      // Bosilganda shishani kattalashtirish (Zoom effekti)
+      const { left, width } = getTabLayout(activeIndex);
+      glass.style.transform = `translateX(${left}px) scale(1.06, 1.06)`;
     });
 
-    // Barmoqni qo'yib yuborganda joyiga mayin tushishi
+    // Barmoq bilan surish (Tabiiy suyuqlik cho'zilishi)
+    window.addEventListener('pointermove', (e) => {
+      if (!isPressed) return;
+
+      const barRect = tabBar.getBoundingClientRect();
+      const currentX = Math.max(barRect.left, Math.min(e.clientX, barRect.right));
+      const deltaX = currentX - lastTouchX;
+      lastTouchX = currentX;
+
+      const relativeX = currentX - barRect.left;
+      const tabWidth = barRect.width / tabs.length;
+      const hoverIndex = Math.floor(relativeX / tabWidth);
+
+      if (hoverIndex >= 0 && hoverIndex < tabs.length && hoverIndex !== activeIndex) {
+        activeIndex = hoverIndex;
+        tabs.forEach((tab, i) => tab.classList.toggle('active', i === activeIndex));
+      }
+
+      // Surish tezligiga qarab shishani oval qilib cho'zish
+      const stretchFactor = Math.min(Math.abs(deltaX) * 0.08, 0.4);
+      const scaleX = 1.08 + stretchFactor;
+      const scaleY = 1.04 - (stretchFactor * 0.4);
+
+      const targetPos = relativeX - (tabWidth / 2);
+      const safeLeft = Math.max(5, Math.min(targetPos, barRect.width - tabWidth - 5));
+
+      glass.style.width = `${tabWidth}px`;
+      glass.style.transform = `translateX(${safeLeft}px) scale(${scaleX}, ${scaleY})`;
+    });
+
+    // Barmoqni qo'yib yuborganda mayin o'z holiga qaytish
     window.addEventListener('pointerup', () => {
-      if (!isDragging) return;
-      isDragging = false;
-      renderCapsule(currentIndex, true);
+      if (!isPressed) return;
+      isPressed = false;
+      setTab(activeIndex, true);
     });
 
-    window.addEventListener('load', () => renderCapsule(0, true));
+    window.addEventListener('load', () => setTab(0, true));
   </script>
 </body>
 </html>
