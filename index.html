@@ -2,212 +2,277 @@
 <html lang="uz">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>iOS Liquid Glass Drag Bar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Telegram iOS Liquid Glass Bar</title>
   <style>
     * {
       box-sizing: border-box;
       user-select: none;
       -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     body {
-      background: radial-gradient(circle at center, #1e1b4b 0%, #090d16 100%);
+      background: #000000;
       display: flex;
       justify-content: center;
       align-items: flex-end;
       min-height: 100vh;
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", sans-serif;
       overflow: hidden;
     }
 
-    /* Pastki Panel Asosi (Kapsula) */
+    /* Pastki panel orqa foni */
+    .tab-bar-wrapper {
+      position: relative;
+      width: 94%;
+      max-width: 430px;
+      margin-bottom: 28px;
+    }
+
     .tab-bar {
       position: relative;
       display: flex;
-      background: rgba(255, 255, 255, 0.08);
-      backdrop-filter: blur(25px);
-      -webkit-backdrop-filter: blur(25px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      padding: 6px;
-      border-radius: 40px;
-      margin-bottom: 30px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.2);
-      width: 92%;
-      max-width: 420px;
-      touch-action: none; /* iOS'da sahifa siljib ketmasligi uchun */
+      background: rgba(26, 29, 36, 0.75);
+      backdrop-filter: blur(35px) saturate(190%);
+      -webkit-backdrop-filter: blur(35px) saturate(190%);
+      border: 0.5px solid rgba(255, 255, 255, 0.12);
+      padding: 5px;
+      border-radius: 36px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), inset 0 0.5px 1px rgba(255, 255, 255, 0.25);
+      touch-action: none;
     }
 
-    /* Suyuq Oyna (Liquid Glass Pill) */
-    .indicator {
+    /* Suyuq Shisha Kapsula (Telegram Liquid Glass Capsule) */
+    .liquid-capsule {
       position: absolute;
-      top: 6px;
+      top: 5px;
       left: 0;
-      height: calc(100% - 12px);
-      background: rgba(255, 255, 255, 0.16);
-      backdrop-filter: blur(15px);
-      -webkit-backdrop-filter: blur(15px);
-      border: 1px solid rgba(255, 255, 255, 0.35);
-      border-radius: 30px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+      height: calc(100% - 10px);
+      border-radius: 28px;
       pointer-events: none;
-      transform: translateX(6px) scale(1);
-      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
-                  width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+      z-index: 1;
+
+      /* Shisha va yorug'lik effektlari */
+      background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.28) 0%,
+        rgba(255, 255, 255, 0.08) 50%,
+        rgba(255, 255, 255, 0.18) 100%
+      );
+      backdrop-filter: blur(18px) brightness(1.2);
+      -webkit-backdrop-filter: blur(18px) brightness(1.2);
+      
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-top: 1.5px solid rgba(255, 255, 255, 0.55);
+
+      box-shadow: 
+        0 8px 25px rgba(0, 0, 0, 0.35),
+        inset 0 2px 4px rgba(255, 255, 255, 0.6),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+
+      /* Telegram uslubidagi o'ta silliq Spring fizika */
+      transition: transform 0.52s cubic-bezier(0.19, 1, 0.22, 1),
+                  width 0.52s cubic-bezier(0.19, 1, 0.22, 1),
                   border-radius 0.3s ease;
+      will-change: transform, width;
     }
 
-    /* Barmoq bilan ushlab turgandagi cho'zilish holati */
-    .indicator.dragging {
-      transition: none; /* Barmoq ostida kechikmasdan yurishi uchun */
-      background: rgba(255, 255, 255, 0.22);
-      transform-origin: center;
+    /* Shisha ichidagi yorug'lik nuri (Prisma tovlanishi) */
+    .liquid-capsule::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.4), transparent 60%);
+      opacity: 0.8;
+    }
+
+    .liquid-capsule.dragging {
+      transition: width 0.15s ease-out; /* Barmoq ostida kechikmasdan silliq yurishi */
+      background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.35) 0%,
+        rgba(255, 255, 255, 0.12) 100%
+      );
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45), inset 0 2px 6px rgba(255, 255, 255, 0.8);
     }
 
     /* Tab Tugmalari */
-    .tab-item {
+    .tab-btn {
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 8px 0;
+      padding: 7px 0;
       background: transparent;
       border: none;
       outline: none;
       cursor: pointer;
-      z-index: 1;
-      color: #94a3b8;
-      transition: color 0.3s ease, transform 0.3s ease;
-      -webkit-tap-highlight-color: transparent;
+      z-index: 2;
+      color: #8e8e93;
+      transition: color 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
-    .tab-item svg {
+    .icon-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .icon-box svg {
       width: 22px;
       height: 22px;
       fill: none;
       stroke: currentColor;
-      stroke-width: 2;
+      stroke-width: 2.1;
       stroke-linecap: round;
       stroke-linejoin: round;
-      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
-    .tab-item span {
-      font-size: 10px;
+    .tab-btn span {
+      font-size: 10.5px;
       font-weight: 500;
-      margin-top: 4px;
-      letter-spacing: 0.2px;
+      margin-top: 3px;
+      letter-spacing: -0.1px;
+      transition: transform 0.3s ease;
     }
 
-    /* Faol Tugma Rangi va Sakrashi */
-    .tab-item.active {
-      color: #38bdf8;
+    /* Faol Tab */
+    .tab-btn.active {
+      color: #007aff; /* Telegram ko'k rangi */
     }
 
-    .tab-item.active svg {
-      transform: scale(1.15);
-      stroke: #38bdf8;
+    .tab-btn.active .icon-box {
+      transform: scale(1.12);
+    }
+
+    .tab-btn.active svg {
+      stroke: #007aff;
     }
   </style>
 </head>
 <body>
 
-  <div class="tab-bar" id="tabBar">
-    <div class="indicator" id="indicator"></div>
+  <div class="tab-bar-wrapper">
+    <div class="tab-bar" id="tabBar">
+      <div class="liquid-capsule" id="capsule"></div>
 
-    <button class="tab-item active" data-index="0">
-      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-      <span>Asosiy</span>
-    </button>
+      <button class="tab-btn active" data-index="0">
+        <div class="icon-box">
+          <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        </div>
+        <span>Asosiy</span>
+      </button>
 
-    <button class="tab-item" data-index="1">
-      <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-      <span>So'zlarim</span>
-    </button>
+      <button class="tab-btn" data-index="1">
+        <div class="icon-box">
+          <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+        </div>
+        <span>So'zlarim</span>
+      </button>
 
-    <button class="tab-item" data-index="2">
-      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      <span>Qidirish</span>
-    </button>
+      <button class="tab-btn" data-index="2">
+        <div class="icon-box">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </div>
+        <span>Qidirish</span>
+      </button>
 
-    <button class="tab-item" data-index="3">
-      <svg viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
-      <span>Yo'l xaritasi</span>
-    </button>
+      <button class="tab-btn" data-index="3">
+        <div class="icon-box">
+          <svg viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+        </div>
+        <span>Yo'l xaritasi</span>
+      </button>
 
-    <button class="tab-item" data-index="4">
-      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-      <span>Profil</span>
-    </button>
+      <button class="tab-btn" data-index="4">
+        <div class="icon-box">
+          <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        </div>
+        <span>Profil</span>
+      </button>
+    </div>
   </div>
 
   <script>
     const tabBar = document.getElementById('tabBar');
-    const indicator = document.getElementById('indicator');
-    const tabs = Array.from(document.querySelectorAll('.tab-item'));
-    let activeIndex = 0;
+    const capsule = document.getElementById('capsule');
+    const tabs = Array.from(document.querySelectorAll('.tab-btn'));
+    
+    let currentIndex = 0;
     let isDragging = false;
+    let startX = 0;
 
-    function setTab(index) {
-      activeIndex = Math.max(0, Math.min(index, tabs.length - 1));
+    function renderCapsule(index, isSmooth = true) {
+      currentIndex = Math.max(0, Math.min(index, tabs.length - 1));
+      
       tabs.forEach((tab, i) => {
-        tab.classList.toggle('active', i === activeIndex);
+        tab.classList.toggle('active', i === currentIndex);
       });
-      const targetTab = tabs[activeIndex];
+
+      const targetTab = tabs[currentIndex];
       const targetRect = targetTab.getBoundingClientRect();
       const barRect = tabBar.getBoundingClientRect();
 
-      indicator.classList.remove('dragging');
-      indicator.style.width = `${targetRect.width}px`;
-      indicator.style.transform = `translateX(${targetRect.left - barRect.left}px) scale(1)`;
+      const left = targetRect.left - barRect.left;
+      const width = targetRect.width;
+
+      if (isSmooth) {
+        capsule.classList.remove('dragging');
+      }
+
+      capsule.style.width = `${width}px`;
+      capsule.style.transform = `translateX(${left}px)`;
     }
 
-    // Bosganda almashtirish
+    // Bosganda yumshoq o'tish
     tabs.forEach((tab, index) => {
-      tab.addEventListener('pointerdown', () => setTab(index));
+      tab.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        startX = e.clientX;
+        renderCapsule(index, true);
+      });
     });
 
-    // Bosib turib surish (Drag / Swipe) mantig'i
-    tabBar.addEventListener('pointerdown', (e) => {
-      isDragging = true;
-      indicator.classList.add('dragging');
-      onPointerMove(e);
-    });
-
-    function onPointerMove(e) {
+    // Barmoq bilan surish (Mayin suyuq cho'zilish)
+    window.addEventListener('pointermove', (e) => {
       if (!isDragging) return;
+
+      capsule.classList.add('dragging');
+
       const barRect = tabBar.getBoundingClientRect();
-      const clientX = e.clientX;
-      const relativeX = clientX - barRect.left;
-
-      // Barmoq qaysi tugma ustida ekanligini topish
+      const touchX = Math.max(barRect.left, Math.min(e.clientX, barRect.right));
+      const relativeX = touchX - barRect.left;
       const tabWidth = barRect.width / tabs.length;
-      const currentIndex = Math.floor(relativeX / tabWidth);
 
-      if (currentIndex >= 0 && currentIndex < tabs.length) {
+      // Barmoq ostidagi index
+      const hoverIndex = Math.floor(relativeX / tabWidth);
+      if (hoverIndex >= 0 && hoverIndex < tabs.length && hoverIndex !== currentIndex) {
+        currentIndex = hoverIndex;
         tabs.forEach((tab, i) => tab.classList.toggle('active', i === currentIndex));
       }
 
-      // Suyuq cho'zilish (Liquid scale) effekti
-      const currentIndicatorLeft = Math.max(6, Math.min(relativeX - (tabWidth / 2), barRect.width - tabWidth - 6));
-      indicator.style.width = `${tabWidth * 1.15}px`; // Surilayotganda kengayadi
-      indicator.style.transform = `translateX(${currentIndicatorLeft}px) scaleX(1.1)`;
-    }
+      // Suyuq shisha cho'zilishi (Stretching formula)
+      const centerPos = relativeX - (tabWidth / 2);
+      const stretchWidth = tabWidth * 1.25; // Yon tomonga yengil kengayishi
+      const finalLeft = Math.max(5, Math.min(centerPos - (stretchWidth - tabWidth) / 2, barRect.width - stretchWidth - 5));
 
-    window.addEventListener('pointermove', onPointerMove);
-
-    window.addEventListener('pointerup', (e) => {
-      if (!isDragging) return;
-      isDragging = false;
-      const barRect = tabBar.getBoundingClientRect();
-      const tabWidth = barRect.width / tabs.length;
-      const finalIndex = Math.floor((e.clientX - barRect.left) / tabWidth);
-      setTab(finalIndex);
+      capsule.style.width = `${stretchWidth}px`;
+      capsule.style.transform = `translateX(${finalLeft}px)`;
     });
 
-    window.addEventListener('load', () => setTab(0));
+    // Barmoqni qo'yib yuborganda joyiga mayin tushishi
+    window.addEventListener('pointerup', () => {
+      if (!isDragging) return;
+      isDragging = false;
+      renderCapsule(currentIndex, true);
+    });
+
+    window.addEventListener('load', () => renderCapsule(0, true));
   </script>
 </body>
 </html>
