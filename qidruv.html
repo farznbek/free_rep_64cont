@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>UnlockWord - Dictionary</title>
+<style>
+    :root {
+      --bg-gradient: radial-gradient(circle at 20% 15%, #eff6ff 0%, #dbeafe 50%, #c7d2fe 100%);
+      --text-main: #0f172a;
+      --text-sub: #475569;
+      
+      --card-bg: rgba(255, 255, 255, 0.68);
+      --card-border-top: rgba(255, 255, 255, 0.95);
+      --card-border-btm: rgba(255, 255, 255, 0.35);
+      --card-shadow: 
+        0 20px 40px -15px rgba(30, 41, 59, 0.12),
+        0 0 0 1px rgba(255, 255, 255, 0.5) inset,
+        inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.95),
+        inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.04);
+        
+      --chevron: #64748b;
+      --accent: #4F46E5;
+      --accent-glow: rgba(79, 70, 229, 0.35);
+    }
+
+    body.dark-theme {
+      --bg-gradient: radial-gradient(circle at 25% 20%, #1e1b4b 0%, #0c0a1f 60%, #030208 100%);
+      --text-main: #ffffff;
+      --text-sub: #94a3b8;
+      
+      --card-bg: rgba(255, 255, 255, 0.06);
+      --card-border-top: rgba(255, 255, 255, 0.28);
+      --card-border-btm: rgba(255, 255, 255, 0.04);
+      --card-shadow: 
+        0 14px 28px -14px rgba(0, 0, 0, 0.38),
+        0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+        inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.22),
+        inset 0 -1.5px 2px 0 rgba(0, 0, 0, 0.4);
+
+      --chevron: #475569;
+      --accent: #818cf8;
+      --accent-glow: rgba(129, 140, 248, 0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    html, body {
+      position: fixed; top: 0; left: 0;
+      height: 100%; width: 100%;
+      background: var(--bg-gradient); color: var(--text-main);
+      overflow: hidden;
+      overscroll-behavior: none;
+      transition: background 0.25s ease, color 0.25s ease;
+    }
+
+    :root { 
+      --safe-bottom: env(safe-area-inset-bottom, 0px); 
+      --safe-top: env(safe-area-inset-top, 0px);
+    }
+    #app { 
+      position: relative; 
+      height: 100%; 
+      width: 100%; 
+      overflow: hidden; 
+      background: var(--bg-gradient);
+    }
+
+    .top-header { 
+      position: fixed;
+      top: calc(12px + var(--safe-top));
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(480px, calc(100% - 32px));
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      z-index: 600; 
+      pointer-events: auto;
+    }
+    .header-actions { display: flex; align-items: center; gap: 8px; position: relative; }
+
+    .ui-layer {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 10; pointer-events: auto; overflow-y: auto; overflow-x: hidden;
+      display: flex; flex-direction: column; align-items: center;
+      padding: calc(68px + var(--safe-top)) 16px 0 16px;
+      -webkit-overflow-scrolling: touch;
+      background: transparent;
+    }
+    .ui-content {
+      width: 100%; max-width: 480px;
+      display: flex; flex-direction: column; gap: 16px;
+      padding-bottom: calc(180px + var(--safe-bottom));
+    }
+
+    .bg-blobs { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden; pointer-events: none; }
+    .blob { position: absolute; border-radius: 50%; filter: blur(38px); opacity: 0.65; }
+    .blob-1 { top: 8%; left: 8%; width: 340px; height: 340px; background: #a855f7; }
+    .blob-2 { bottom: 18%; right: 5%; width: 300px; height: 300px; background: #3b82f6; }
+
+    .toggle-wrapper { position: relative; }
+    .hidden-checkbox { display: none; }
+    .toggle-track {
+      position: relative; width: 76px; height: 32px; border-radius: 50px;
+      background: var(--card-bg); backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px);
+      border: 1px solid var(--card-border-top); cursor: pointer;
+      box-shadow: var(--card-shadow);
+      display: flex; align-items: center;
+      transition: background 0.25s ease, border-color 0.25s ease;
+    }
+    .glass-thumb {
+      position: absolute; top: 50%; left: 3px; width: 26px; height: 26px; border-radius: 50%;
+      display: flex; justify-content: center; align-items: center;
+      background: rgba(255, 255, 255, 0.22); backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); z-index: 2;
+      transform: translateY(-50%) translateX(44px);
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.25s ease;
+    }
+    body:not(.dark-theme) .glass-thumb {
+      transform: translateY(-50%) translateX(0px);
+      background: #ffffff;
+      border: 1px solid #ffffff;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.22);
+    }
+    .text { position: absolute; font-size: 10px; font-weight: 700; text-transform: uppercase; pointer-events: none; z-index: 1; transition: opacity 0.2s; }
+    .text-dark { left: 10px; color: #cbd5e1; opacity: 1; }
+    .text-light { right: 10px; color: var(--accent); opacity: 0; }
+    body:not(.dark-theme) .text-dark { opacity: 0; }
+    body:not(.dark-theme) .text-light { opacity: 1; }
+    .icon { width: 13px; height: 13px; fill: none; stroke-width: 2.2; position: absolute; transition: opacity 0.25s ease, transform 0.25s ease; }
+    .icon-moon { stroke: #e2e8f0; opacity: 1; transform: scale(1) rotate(0deg); }
+    .icon-sun { stroke: #fbbf24; opacity: 0; transform: scale(0.5) rotate(-90deg); }
+    body:not(.dark-theme) .icon-moon { opacity: 0; transform: scale(0.5) rotate(90deg); }
+    body:not(.dark-theme) .icon-sun { opacity: 1; transform: scale(1) rotate(0deg); }
+
+    .lang-wrapper { position: relative; width: 44px; height: 32px; }
+    .lang-trigger {
+      position: absolute; top: 0; right: 0; z-index: 1; width: 44px; height: 32px; border-radius: 12px;
+      background: var(--card-bg); backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px);
+      border: 1px solid var(--card-border-top); display: flex; justify-content: center; align-items: center;
+      cursor: pointer; box-shadow: var(--card-shadow);
+    }
+    .trigger-text { font-size: 12px; font-weight: 700; color: var(--text-main); }
+    
+    .ios-menu {
+      position: fixed; top: calc(54px + var(--safe-top)); right: 16px; left: auto; z-index: 9999; width: 170px;
+      background: var(--card-bg); backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px);
+      border: 1.5px solid var(--card-border-top); border-radius: 18px; padding: 8px; box-shadow: var(--card-shadow);
+      transform-origin: top right; transform: scale(0.1); opacity: 0; visibility: hidden;
+      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.18);
+    }
+    .ios-menu.active { transform: scale(1); opacity: 1; visibility: visible; }
+    .menu-header { font-size: 10px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; padding: 6px 10px 8px; border-bottom: 1px solid rgba(150,150,150,0.15); margin-bottom: 4px; }
+    .menu-list { list-style: none; display: flex; flex-direction: column; gap: 3px; }
+    .menu-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; font-size: 13.5px; font-weight: 600; color: var(--text-main); border-radius: 12px; cursor: pointer; }
+    .menu-item.selected { color: var(--accent); background: rgba(79, 70, 229, 0.12); }
+    .check-icon { width: 16px; height: 16px; stroke: var(--accent); stroke-width: 2.5; fill: none; display: none; }
+    .menu-item.selected .check-icon { display: block; }
+
+    .avatar-circle {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: linear-gradient(135deg, #818cf8 0%, var(--accent) 100%);
+      box-shadow: 0 6px 18px -4px var(--accent-glow);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 16px; color: #fff; flex-shrink: 0;
+    }
+
+    .screen {
+      flex: 1; display: flex; flex-direction: column; width: 100%;
+      padding: 4px 2px 14px;
+    }
+
+    #search {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      min-height: calc(100vh - 140px);
+    }
+    .search-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+    }
+    .searchbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 22px;
+      background: var(--card-bg);
+      -webkit-backdrop-filter: blur(9px);
+      backdrop-filter: blur(9px);
+      border: 1.5px solid transparent;
+      border-top-color: var(--card-border-top);
+      border-left-color: var(--card-border-top);
+      border-bottom-color: var(--card-border-btm);
+      border-right-color: var(--card-border-btm);
+      box-shadow: var(--card-shadow);
+      position: relative;
+      overflow: hidden;
+      flex: 1;
+    }
+    .searchbar .mag { display: flex; align-items: center; justify-content: center; color: var(--text-sub); flex-shrink: 0; }
+    .searchbar input {
+      border: none; background: transparent; flex: 1; padding: 6px 0; min-width: 0;
+      box-shadow: none; font-size: 16px !important; color: var(--text-main); outline: none;
+    }
+    .toggle2 {
+      display: flex; border-radius: 12px; overflow: hidden;
+      border: 1px solid var(--card-border-top); flex-shrink: 0; background: rgba(0,0,0,0.06);
+    }
+    body.dark-theme .toggle2 { background: rgba(255,255,255,0.06); }
+    .toggle2 span { padding: 6px 9px; font-size: 11px; font-weight: 800; color: var(--text-sub); cursor: pointer; }
+    .toggle2 span.on { background: var(--accent); color: #fff; }
+
+    .clr-x {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: none; align-items: center; justify-content: center;
+      color: var(--text-sub);
+      flex-shrink: 0; cursor: pointer;
+      background: rgba(120,120,140,0.22);
+    }
+    .clr-x:hover { color: var(--text-main); }
+
+    .search-exit-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--card-bg);
+      -webkit-backdrop-filter: blur(9px);
+      backdrop-filter: blur(9px);
+      border: 1.5px solid var(--card-border-top);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-sub);
+      flex-shrink: 0;
+      cursor: pointer;
+      box-shadow: var(--card-shadow);
+    }
+
+    .search-footer-wrap {
+      position: fixed !important;
+      left: 50% !important;
+      transform: translate3d(-50%, 0, 0);
+      bottom: calc(96px + var(--safe-bottom));
+      width: min(520px, calc(100% - 24px)) !important;
+      z-index: 500;
+      will-change: transform, bottom;
+      transition: transform 0.12s ease-out;
+    }
+
+    @media (max-width: 768px) {
+      body.search-kb-open .liquid-nav { display: none !important; }
+    }
+
+    .idle-content {
+      display: flex; flex-direction: column; gap: 14px; flex-shrink: 0;
+      margin-bottom: 8px;
+    }
+    .saved-compact-card {
+      background: var(--card-bg); -webkit-backdrop-filter: blur(9px); backdrop-filter: blur(9px);
+      border: 1.5px solid var(--card-border-top);
+      border-radius: 20px; padding: 13px 16px; display: flex; align-items: center; justify-content: space-between;
+      box-shadow: var(--card-shadow); cursor: pointer; flex-shrink: 0;
+    }
+    .saved-info { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .saved-icon {
+      width: 38px; height: 38px; border-radius: 12px; background: color-mix(in srgb, var(--accent) 16%, transparent);
+      display: flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0;
+    }
+    .saved-icon svg { width: 19px; height: 19px; stroke: currentColor; fill: none; stroke-width: 2.2; }
+    .saved-title { font-size: 14px; font-weight: 800; color: var(--text-main); }
+    .saved-desc { font-size: 11.5px; color: var(--text-sub); margin-top: 1px; }
+
+    .recent-section-head { display: flex; align-items: center; justify-content: space-between; padding: 2px 4px; flex-shrink: 0; }
+    .rs-label { font-size: 11.5px; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: .05em; }
+    .rs-clear-btn { font-size: 11.5px; color: var(--accent); background: none; border: none; font-weight: 700; cursor: pointer; }
+    .rs-chips-wrap { display: flex; flex-wrap: wrap; gap: 8px; padding: 2px; }
+    .rs-chip {
+      background: var(--card-bg); -webkit-backdrop-filter: blur(9px); backdrop-filter: blur(9px);
+      border: 1px solid var(--card-border-top);
+      border-radius: 14px; padding: 8px 10px 8px 13px; font-size: 12.5px; font-weight: 700; color: var(--text-main);
+      display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+    }
+    .rs-chip .rs-del { color: var(--text-sub); font-size: 11px; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(120,120,140,0.18); }
+
+    .results-list {
+      display: none; flex-direction: column; gap: 8px; flex: 1; min-height: 0;
+      padding-bottom: calc(180px + var(--safe-bottom));
+    }
+    body.is-searching .idle-content { display: none; }
+    body.is-searching .results-list { display: flex; }
+
+    .res-card {
+      background: var(--card-bg); -webkit-backdrop-filter: blur(9px); backdrop-filter: blur(9px);
+      border: 1.5px solid var(--card-border-top);
+      border-radius: 18px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+      box-shadow: var(--card-shadow); cursor: pointer; flex-shrink: 0; gap: 10px;
+    }
+    .res-card:active { transform: scale(0.985); }
+    .res-info { min-width: 0; flex: 1; }
+    .res-info .res-word { font-size: 16px; font-weight: 800; color: var(--text-main); }
+    .res-info .res-trans { font-size: 12.5px; color: var(--text-sub); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .res-badge {
+      font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 50px; flex-shrink: 0;
+      background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent);
+      border: 1px solid color-mix(in srgb, var(--accent) 38%, transparent);
+    }
+    .results-empty { text-align: center; color: var(--text-sub); padding: 30px 10px; font-size: 13px; }
+
+    /* SAQLASH VA COPY TUGMALARI UCHUN SPRING ANIMATSIYASI */
+    .copy-btn {
+      width: 38px; height: 38px; border-radius: 12px;
+      border: 1.5px solid var(--card-border-top);
+      background: var(--card-bg); color: var(--accent); cursor: pointer; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; backdrop-filter: blur(9px);
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease, background 0.35s ease, color 0.35s ease;
+    }
+    .copy-btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.2; }
+    .copy-btn:active { transform: scale(.97); }
+    .copy-btn.done {
+      color: #10b981 !important;
+      background: rgba(16, 185, 129, 0.18) !important;
+      border-color: rgba(16, 185, 129, 0.45) !important;
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.42), var(--card-shadow) !important;
+      animation: copySpringPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.35) forwards;
+    }
+    @keyframes copySpringPop {
+      0% { transform: scale(0.65); opacity: 0.5; }
+      50% { transform: scale(1.22); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .meaning-bm-btn {
+      width: 32px; height: 32px; border-radius: 50%; background: var(--card-bg);
+      border: 1px solid var(--card-border-top);
+      color: var(--text-sub); display: flex; align-items: center; justify-content: center; cursor: pointer;
+      flex-shrink: 0; transition: transform 0.15s ease, color 0.2s, background 0.2s;
+    }
+    .meaning-bm-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; }
+    .meaning-bm-btn.active {
+      color: #fbbf24;
+      background: rgba(251, 191, 36, 0.15);
+      border-color: rgba(251, 191, 36, 0.4);
+      animation: copySpringPop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.35) forwards;
+    }
+    .meaning-bm-btn.active svg { fill: #fbbf24; }
+
+    .wd-topbar { position: relative; height: 40px; display: flex; align-items: center; margin-bottom: 14px; gap: 12px; flex-shrink: 0; width: 100%; }
+    .wd-back {
+      display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 50%;
+      background: var(--card-bg); backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px);
+      border: 1.5px solid var(--card-border-top);
+      box-shadow: var(--card-shadow); color: var(--accent); cursor: pointer;
+      z-index: 2; flex-shrink: 0;
+    }
+    .wd-back svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .wd-topbar-title { position: absolute; left: 0; right: 0; text-align: center; font-size: 15px; font-weight: 700; color: var(--text-sub); pointer-events: none; }
+
+    #word-detail { padding-bottom: 0; }
+    .dw-scroll { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+      display: flex; flex-direction: column; gap: 12px; padding-bottom: calc(120px + var(--safe-bottom)); }
+
+    .dw-hero {
+      background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 15%, transparent), var(--card-bg) 65%);
+      border: 1.5px solid var(--card-border-top);
+      border-radius: 22px; padding: 15px 18px; box-shadow: var(--card-shadow);
+      backdrop-filter: blur(9px);
+      display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;
+    }
+    .dw-title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .dw-title-with-copy { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .dw-word-title { font-size: 25px; font-weight: 800; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dw-meta-row { display: flex; align-items: center; justify-content: space-between; }
+    .dw-voice-box { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--text-sub); }
+    .dw-speaker-btn {
+      width: 34px; height: 34px; border-radius: 10px; background: rgba(120,120,140,0.12);
+      border: 1px solid var(--card-border-top); display: flex; align-items: center; justify-content: center;
+      color: var(--accent); cursor: pointer; flex-shrink: 0;
+    }
+    .dw-speaker-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; }
+
+    .meaning-card {
+      background: var(--card-bg); border: 1.5px solid var(--card-border-top);
+      border-radius: 20px; padding: 15px 16px; backdrop-filter: blur(9px);
+      box-shadow: var(--card-shadow); display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;
+    }
+    .meaning-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .meaning-meta { display: flex; align-items: center; gap: 8px; }
+    .meaning-num {
+      width: 22px; height: 22px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 18%, transparent);
+      color: var(--accent); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .meaning-lvl {
+      font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 6px;
+      background: var(--accent); color: #fff;
+    }
+    .trans-row { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; margin-top: 4px; }
+    .lang-tag { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; background: rgba(120,120,140,0.16); color: var(--text-sub); flex-shrink: 0; }
+
+    .meaning-collapsible {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 4px;
+      animation: expandAnim 0.25s ease-out;
+    }
+    .meaning-collapsible.open { display: flex; }
+    @keyframes expandAnim {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .toggle-details-btn {
+      align-self: flex-start;
+      margin-left: 28px;
+      padding: 5px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--card-border-top);
+      background: rgba(120, 120, 140, 0.12);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .toggle-details-btn:active {
+      transform: scale(0.96);
+      background: rgba(120, 120, 140, 0.22);
+    }
+
+    .pattern-sub-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-left: 28px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(120, 120, 140, 0.08);
+      border: 1px solid var(--card-border-top);
+    }
+    .pattern-sub-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: #10b981;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pattern-box-code {
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 12px;
+      font-weight: 700;
+      color: #34d399;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      margin-bottom: 4px;
+    }
+
+    .example-item {
+      font-size: 12.5px;
+      color: var(--text-main);
+      line-height: 1.45;
+      font-style: italic;
+      padding-left: 10px;
+      border-left: 2.5px solid var(--accent);
+      margin-top: 3px;
+    }
+
+    .meaning-syn-wrap { margin-left: 28px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--text-sub); margin-top: 4px; }
+    .syn-chip {
+      background: color-mix(in srgb, var(--accent) 14%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+      color: var(--text-main); padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 700;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
+    }
+    .syn-chip:active { transform: scale(0.95); background: var(--accent); color: #fff; }
+
+    .btn-circle {
+      width: 38px; height: 38px; border-radius: 50%; background: var(--card-bg);
+      border: 1.5px solid var(--card-border-top);
+      color: var(--text-main); display: flex; align-items: center; justify-content: center; cursor: pointer;
+      backdrop-filter: blur(9px); flex-shrink: 0;
+    }
+    .btn-circle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; }
+
+    .liquid-nav {
+      position: fixed; z-index: 120; left: 50%; bottom: calc(16px + var(--safe-bottom));
+      transform: translateX(-50%);
+      width: min(520px, calc(100% - 24px));
+      display: flex; align-items: center; gap: 10px;
+      pointer-events: auto;
+    }
+    .liquid-nav-bar {
+      position: relative; flex: 1; min-width: 0;
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      height: 68px; padding: 6px; border-radius: 34px;
+      background: linear-gradient(135deg, rgba(129,140,248,0.16), rgba(255,255,255,0.08) 55%, rgba(167,139,250,0.16));
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: 0 22px 44px -14px rgba(10, 8, 30, 0.6), 0 0 26px -6px var(--accent-glow);
+      backdrop-filter: blur(9px);
+      overflow: hidden;
+    }
+    .liquid-nav-pill {
+      position: absolute; top: 6px; left: 0; height: calc(100% - 12px);
+      border-radius: 28px; pointer-events: none;
+      background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 42%, transparent), color-mix(in srgb, var(--accent) 20%, transparent));
+      box-shadow: inset 0 1px 1.5px rgba(255,255,255,.4), 0 8px 18px -6px var(--accent-glow);
+    }
+    .liquid-nav-btn {
+      position: relative; z-index: 2; border: 0; background: transparent; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+      color: var(--text-sub); border-radius: 28px; padding: 0;
+      font: 600 10px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+    }
+    .liquid-nav-btn svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .liquid-nav-btn.active { color: #fff; text-shadow: 0 0 12px var(--accent-glow); }
+    .liquid-nav-profile {
+      flex: 0 0 58px; width: 58px; height: 58px; border-radius: 50%; border: 2px solid rgba(255,255,255,.5);
+      background: linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 55%, #ffffff) 100%);
+      color: #fff; cursor: pointer; overflow: hidden;
+      font: 800 18px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 12px 24px -8px var(--accent-glow);
+    }
+    body:not(.dark-theme) .liquid-nav-bar {
+      background: linear-gradient(135deg, rgba(255,255,255,0.72), rgba(238,242,255,0.62) 55%, rgba(245,243,255,0.66));
+      border-color: rgba(255,255,255,0.92);
+    }
+    body:not(.dark-theme) .liquid-nav-btn { color: #64748b; }
+    body:not(.dark-theme) .liquid-nav-btn.active { color: var(--accent); }
+</style>
+</head>
+<body class="dark-theme">
+
+<div id="app">
+  <div class="bg-blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+  </div>
+
+  <header class="top-header">
+    <div class="avatar-circle">F</div>
+    
+    <div class="header-actions">
+      <div class="toggle-wrapper">
+        <input type="checkbox" id="theme-switch" class="hidden-checkbox">
+        <label for="theme-switch" class="toggle-track">
+          <span class="text text-dark" data-i18n="night">Tun</span>
+          <span class="text text-light" data-i18n="day">Kun</span>
+          <div class="glass-thumb">
+            <svg class="icon icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            <svg class="icon icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+          </div>
+        </label>
+      </div>
+
+      <div class="lang-wrapper">
+        <button class="lang-trigger" id="langBtn">
+          <span class="trigger-text" id="btnLabel">UZ</span>
+        </button>
+        <div class="ios-menu" id="langMenu">
+          <div class="menu-header" data-i18n="choose_lang">TILNI TANLANG</div>
+          <ul class="menu-list">
+            <li class="menu-item selected" data-code="UZ"><span>O'zbekcha</span><svg class="check-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></li>
+            <li class="menu-item" data-code="RU"><span>Русский</span><svg class="check-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></li>
+            <li class="menu-item" data-code="EN"><span>English</span><svg class="check-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="ui-layer">
+    <div class="ui-content">
+
+      <!-- ================= SEARCH SCREEN ================= -->
+      <div class="screen" id="search">
+        <div class="idle-content" id="idleContent">
+          <div class="saved-compact-card" onclick="openSavedWordsList()">
+            <div class="saved-info">
+              <div class="saved-icon">
+                <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+              </div>
+              <div>
+                <div class="saved-title" data-i18n="saved_words">Saqlangan so'zlar</div>
+                <div class="saved-desc" id="savedCountDesc" data-i18n="saved_desc">Shaxsiy lug'atingizdagi barcha ma'nolar</div>
+              </div>
+            </div>
+            <span style="color:var(--text-sub); font-size:18px;">›</span>
+          </div>
+
+          <div>
+            <div class="recent-section-head">
+              <span class="rs-label" data-i18n="recent_searches">Oxirgi qidirilganlar</span>
+              <button class="rs-clear-btn" onclick="clearAllRecentSearches()" data-i18n="clear">Tozalash</button>
+            </div>
+            <div class="rs-chips-wrap" id="recentSearchChips"></div>
+          </div>
+        </div>
+
+        <div class="results-list" id="searchResultsList"></div>
+
+        <div class="search-row search-footer-wrap" id="searchBarWrap">
+          <div class="searchbar">
+            <span class="mag">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </span>
+            <input id="searchInput" placeholder="Search in English..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" oninput="onSearchType()" onfocus="onSearchFocus()" onblur="onSearchBlur()">
+            <div class="clr-x" id="clrX" onclick="clearSearchText()" title="Tozalash">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </div>
+            <div class="toggle2" id="searchLangToggle">
+              <span id="tglEn" class="on" onclick="switchSearchLang('en')">EN</span>
+              <span id="tglUz" onclick="switchSearchLang('uz')">UZ</span>
+              <span id="tglRu" onclick="switchSearchLang('ru')">RU</span>
+            </div>
+          </div>
+          <div class="search-exit-btn" id="searchExitBtn" onclick="exitSearchFocus()" title="Yopish">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Saqlangan so'zlar ro'yxati -->
+      <div class="screen" id="saved-words-list" style="display:none">
+        <div class="wd-topbar">
+          <button class="btn-circle" onclick="go('search')">
+            <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+          <div class="wd-topbar-title" data-i18n="saved_words">Saqlangan so'zlar</div>
+        </div>
+        <div class="dw-scroll" id="savedWordsListBox"></div>
+      </div>
+
+      <!-- Word detail -->
+      <div class="screen" id="word-detail" style="display:none">
+        <div class="wd-topbar">
+          <button class="wd-back" onclick="handleWordDetailBack()">
+            <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+          <div class="wd-topbar-title" data-i18n="dictionary">Lug'at</div>
+        </div>
+
+        <div class="dw-scroll">
+          <div class="dw-hero">
+            <div class="dw-title-row">
+              <div class="dw-title-with-copy">
+                <div class="dw-word-title" id="wdWord">however</div>
+                <button class="copy-btn" id="wdCopyBtn" onclick="copyCurrentWord(this)" title="Nusxa olish">
+                  <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+              </div>
+            </div>
+            <div class="dw-meta-row">
+              <div class="dw-voice-box">
+                <span id="wdPos">/adv / conj/</span>
+              </div>
+              <button class="dw-speaker-btn" onclick="playWordVoice()" title="Tinglash">
+                <svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+              </button>
+            </div>
+          </div>
+          <div id="wdMeaningsContainer" style="display:flex;flex-direction:column;gap:12px;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <nav class="liquid-nav" id="liquidNav" aria-label="Asosiy menyu">
+    <div class="liquid-nav-bar" id="liquidNavBar">
+      <div class="liquid-nav-pill" id="liquidNavPill"></div>
+      <button type="button" class="liquid-nav-btn" data-screen="home" onclick="go('search')">
+        <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.8V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.8"></path></svg>
+        <span data-i18n="nav_home">Bosh sahifa</span>
+      </button>
+      <button type="button" class="liquid-nav-btn active" data-screen="search" onclick="go('search')">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg>
+        <span data-i18n="nav_search">Qidiruv</span>
+      </button>
+      <button type="button" class="liquid-nav-btn" data-screen="practice" onclick="go('search')">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="4.5"></circle><circle cx="12" cy="12" r="1.2"></circle></svg>
+        <span data-i18n="nav_practice">Mashq</span>
+      </button>
+      <button type="button" class="liquid-nav-btn" data-screen="profile" onclick="go('search')">
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        <span data-i18n="nav_profile">Profil</span>
+      </button>
+    </div>
+    <button type="button" class="liquid-nav-profile" id="liquidNavProfile" onclick="go('search')"><span>F</span></button>
+  </nav>
+</div>
+
+<script>
+const LOCAL_WORDS_DB = [
+  {
+    id: 1, word: "however", pos: "adv / conj",
+    synonyms: [{ id: 3, word: "despite" }],
+    meanings: [
+      { 
+        m_id: "1_1", level: "B1", uz: "ammo, biroq, shunga qaramay", ru: "однако, тем не менее", 
+        patterns: [
+          {
+            formula: "Clause + ; + however, + Clause\n(e.g., S + V... ; however, S + V...)",
+            examples: [
+              "The project was difficult; however, they completed it ahead of deadline.",
+              "He wanted to attend the conference; however, all train tickets were sold out."
+            ]
+          },
+          {
+            formula: "Clause. + However, + Clause",
+            examples: [
+              "Prices were extremely high. However, the demand continued to surge.",
+              "She had very little sleep. However, she delivered a flawless speech."
+            ]
+          }
+        ]
+      },
+      { 
+        m_id: "1_2", level: "B2", uz: "qanchalik ... bo'lmasin", ru: "как бы ни...", 
+        patterns: [
+          {
+            formula: "however + adj / adv + Subject + Verb, + Main Clause",
+            examples: [
+              "However hard he tried, he could not solve the advanced equation.",
+              "However fast you run, you cannot undo what has already happened."
+            ]
+          }
+        ]
+      },
+      { 
+        m_id: "1_3", level: "C1", uz: "qanday xohlasa / qanday ko'rinishda bo'lsa ham", ru: "каким бы то ни было образом", 
+        patterns: [
+          {
+            formula: "Subject + Verb + however + Subject + please / choose",
+            examples: [
+              "You may arrange the icons however you prefer on your screen.",
+              "The developer solved the bug however he saw fit."
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: 2, word: "accomplish", pos: "verb",
+    synonyms: [],
+    meanings: [
+      { 
+        m_id: "2_1", level: "B2", uz: "muvaffaqiyatli bajarmoq", ru: "выполнять", 
+        patterns: [
+          {
+            formula: "Subject + accomplish + Object [Noun / Task]",
+            examples: [
+              "She accomplished the entire project within two months.",
+              "The team accomplished all their quarterly targets without delay."
+            ]
+          },
+          {
+            formula: "Subject + accomplish + a great deal / much",
+            examples: [
+              "We have accomplished a great deal in our English studies this year.",
+              "He accomplished more today than during the whole last week."
+            ]
+          }
+        ]
+      },
+      { 
+        m_id: "2_2", level: "C1", uz: "amalga oshirmoq, erishmoq", ru: "достигать", 
+        patterns: [
+          {
+            formula: "Subject + accomplish + that-Clause / what-Clause",
+            examples: [
+              "They accomplished what many critics had thought completely impossible.",
+              "Scientists accomplished what generations had only dreamed of."
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: 3, word: "despite", pos: "prep",
+    synonyms: [{ id: 1, word: "however" }],
+    meanings: [
+      { 
+        m_id: "3_1", level: "B1", uz: "qaramasdan", ru: "несмотря на", 
+        patterns: [
+          {
+            formula: "despite + Noun / V-ing, + Main Clause",
+            examples: [
+              "Despite studying all night, he felt energetic during the test.",
+              "Despite heavy rain, the students arrived on time for the exam."
+            ]
+          },
+          {
+            formula: "Main Clause + despite + Noun / V-ing",
+            examples: [
+              "She passed the IELTS exam despite having only one month to prepare.",
+              "They deployed the code to production despite several server warnings."
+            ]
+          }
+        ]
+      },
+      { 
+        m_id: "3_2", level: "B2", uz: "... ekanligiga qaramay (gap bilan)", ru: "несмотря на то, что...", 
+        patterns: [
+          {
+            formula: "despite the fact that + Clause [S + V...], + Main Clause",
+            examples: [
+              "He came to work despite the fact that he was feeling unwell.",
+              "She won the competition despite the fact that she was the youngest."
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: 4, word: "assume", pos: "verb",
+    synonyms: [],
+    meanings: [
+      { 
+        m_id: "4_1", level: "B1", uz: "taxmin qilmoq, deb hisoblamoq", ru: "предполагать", 
+        patterns: [
+          {
+            formula: "Subject + assume + (that) + Clause",
+            examples: [
+              "Scientists assume that water once flowed freely across Mars.",
+              "Do not assume that everyone understands technical terminal commands."
+            ]
+          },
+          {
+            formula: "It is generally assumed that + Clause",
+            examples: [
+              "It is generally assumed that discipline beats raw talent.",
+              "It was assumed that the meeting would be rescheduled."
+            ]
+          }
+        ]
+      },
+      { 
+        m_id: "4_2", level: "B2", uz: "o'z zimmasiga olmoq", ru: "принимать на себя", 
+        patterns: [
+          {
+            formula: "Subject + assume + [responsibility / control / role]",
+            examples: [
+              "He will assume direct responsibility for the engineering department.",
+              "The senior developer assumed control of the database migration."
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: 5, word: "vital", pos: "adj",
+    synonyms: [],
+    meanings: [
+      { 
+        m_id: "5_1", level: "B2", uz: "o'ta muhim, hayotiy zarur", ru: "жизненно важный", 
+        patterns: [
+          {
+            formula: "It is vital + (that) + Subject + (should) + Verb",
+            examples: [
+              "It is vital that all test requirements be verified beforehand.",
+              "It is vital that you back up the database before running scripts."
+            ]
+          },
+          {
+            formula: "Subject + play a vital role + in + Noun / V-ing",
+            examples: [
+              "Active practice plays a vital role in mastering English.",
+              "Mathematics plays a vital role in computer engineering."
+            ]
+          }
+        ]
+      }
+    ]
+  }
+];
+
+let searchLang = 'en';
+let currentAppLang = 'uz';
+let wdHistoryStack = [];
+let wdOpenedFrom = 'search';
+let currentWordDetailId = null;
+
+let savedMeaningIds = JSON.parse(localStorage.getItem('uw_saved_meaning_ids') || '[]');
+
+const I18N = {
+  uz: {
+    night: "Tun", day: "Kun", choose_lang: "TILNI TANLANG",
+    saved_words: "Saqlangan so'zlar", saved_desc: "Shaxsiy lug'atingizdagi barcha ma'nolar",
+    recent_searches: "Oxirgi qidirilganlar", clear: "Tozalash", history_empty: "Tarix bo'sh",
+    no_results: "Natija topilmadi", dictionary: "Lug'at",
+    nav_home: "Bosh sahifa", nav_search: "Qidiruv", nav_practice: "Mashq", nav_profile: "Profil",
+    ph_en: "Search in English...", ph_uz: "O'zbekcha bosh harflar...", ph_ru: "С буквы на русском...",
+    more_details: "Ko'proq ko'rish ▾", hide_details: "Yashirish ▴", synonyms: "Sinonimlar:",
+    pattern_label: "Ishlatilish qolipi:", example_label: "Namunaviy gaplar:", saved_empty: "Hozircha saqlangan ma'nolar yo'q"
+  },
+  ru: {
+    night: "Ночь", day: "День", choose_lang: "ВЫБЕРИТЕ ЯЗЫК",
+    saved_words: "Сохраненные слова", saved_desc: "Все значения в вашем личном словаре",
+    recent_searches: "Недавние поиски", clear: "Очистить", history_empty: "История пуста",
+    no_results: "Результаты не найдены", dictionary: "Словарь",
+    nav_home: "Главная", nav_search: "Поиск", nav_practice: "Практика", nav_profile: "Профиль",
+    ph_en: "Search in English...", ph_uz: "Поиск по-узбекски...", ph_ru: "С буквы на русском...",
+    more_details: "Подробнее ▾", hide_details: "Скрыть ▴", synonyms: "Синонимы:",
+    pattern_label: "Шаблон использования:", example_label: "Примеры предложений:", saved_empty: "Пока нет сохраненных значений"
+  },
+  en: {
+    night: "Night", day: "Day", choose_lang: "CHOOSE LANGUAGE",
+    saved_words: "Saved words", saved_desc: "All meanings in your personal dictionary",
+    recent_searches: "Recent searches", clear: "Clear", history_empty: "History is empty",
+    no_results: "No results found", dictionary: "Dictionary",
+    nav_home: "Home", nav_search: "Search", nav_practice: "Practice", nav_profile: "Profile",
+    ph_en: "Search in English...", ph_uz: "Search in Uzbek...", ph_ru: "Search in Russian...",
+    more_details: "More details ▾", hide_details: "Hide ▴", synonyms: "Synonyms:",
+    pattern_label: "Usage pattern:", example_label: "Example sentences:", saved_empty: "No saved meanings yet"
+  }
+};
+
+function t(key) {
+  return (I18N[currentAppLang] && I18N[currentAppLang][key]) || (I18N.uz[key]) || key;
+}
+
+function applyGlobalLanguage(lang) {
+  currentAppLang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n');
+    el.textContent = t(k);
+  });
+  refreshSavedWordsCount();
+  renderRecentSearchChips();
+  switchSearchLang(searchLang);
+  if (document.getElementById('word-detail').style.display !== 'none' && currentWordDetailId) {
+    openWordDetail(currentWordDetailId);
+  }
+}
+
+function cleanApostrophe(str) {
+  return (str || '').toLowerCase().replace(/[ʻʼ`\u2019\u2018\u201b\u00b4]/g, "'").trim();
+}
+
+function go(screenId) {
+  const screens = ['search', 'saved-words-list', 'word-detail'];
+  screens.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = (id === screenId) ? 'flex' : 'none';
+  });
+
+  document.querySelectorAll('.liquid-nav-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.screen === 'search');
+  });
+
+  if (screenId === 'search') {
+    renderRecentSearchChips();
+    refreshSavedWordsCount();
+    const query = document.getElementById('searchInput').value.trim();
+    if (!query) {
+      document.body.classList.remove('is-searching');
+      document.getElementById('searchResultsList').innerHTML = '';
+    }
+  }
+  const uiLayer = document.querySelector('.ui-layer');
+  if (uiLayer) uiLayer.scrollTop = 0;
+}
+
+function switchSearchLang(lang) {
+  searchLang = lang;
+  ['tglEn', 'tglUz', 'tglRu'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('on', el.id.toLowerCase().includes(lang));
+  });
+  const inp = document.getElementById('searchInput');
+  if (inp) {
+    if (lang === 'uz') inp.placeholder = t('ph_uz');
+    else if (lang === 'ru') inp.placeholder = t('ph_ru');
+    else inp.placeholder = t('ph_en');
+  }
+  onSearchType();
+}
+
+function onSearchType() {
+  const rawInput = document.getElementById('searchInput').value;
+  const query = cleanApostrophe(rawInput);
+  const clrX = document.getElementById('clrX');
+  const resultsBox = document.getElementById('searchResultsList');
+  
+  if (clrX) clrX.style.display = (query.length > 0) ? 'flex' : 'none';
+  
+  if (query.length === 0) {
+    document.body.classList.remove('is-searching');
+    resultsBox.innerHTML = '';
+    return;
+  }
+
+  document.body.classList.add('is-searching');
+
+  const filtered = [];
+  LOCAL_WORDS_DB.forEach(item => {
+    if (searchLang === 'uz') {
+      const matchedMeaning = item.meanings.find(m => {
+        const words = cleanApostrophe(m.uz).split(/[\s,–—-]+/);
+        return words.some(w => w.startsWith(query));
+      });
+      if (matchedMeaning) filtered.push({ wordObj: item, matchMeaning: matchedMeaning });
+    } else if (searchLang === 'ru') {
+      const matchedMeaning = item.meanings.find(m => {
+        const words = m.ru.toLowerCase().split(/[\s,–—-]+/);
+        return words.some(w => w.startsWith(query));
+      });
+      if (matchedMeaning) filtered.push({ wordObj: item, matchMeaning: matchedMeaning });
+    } else {
+      if (item.word.toLowerCase().startsWith(query)) {
+        filtered.push({ wordObj: item, matchMeaning: item.meanings[0] });
+      }
+    }
+  });
+
+  renderSearchResults(filtered);
+}
+
+function renderSearchResults(results) {
+  const box = document.getElementById('searchResultsList');
+  box.innerHTML = '';
+
+  if (!results.length) {
+    box.innerHTML = `<div class="results-empty">${t('no_results')}</div>`;
+    return;
+  }
+
+  results.forEach(res => {
+    const r = res.wordObj;
+    const m = res.matchMeaning;
+    const card = document.createElement('div');
+    card.className = 'res-card';
+    
+    let transHtml = '';
+
+    if (searchLang === 'ru') {
+      transHtml = `<span style="font-weight:700;color:var(--text-main);">${m.ru}</span> <span style="font-size:11.5px;color:var(--text-sub);opacity:0.75;font-weight:400;">· ${m.uz}</span>`;
+    } else if (searchLang === 'uz') {
+      transHtml = `<span style="font-weight:700;color:var(--text-main);">${m.uz}</span> <span style="font-size:11.5px;color:var(--text-sub);opacity:0.75;font-weight:400;">· ${m.ru}</span>`;
+    } else {
+      if (currentAppLang === 'ru') {
+        transHtml = `<span style="font-weight:700;color:var(--text-main);">${m.ru}</span> <span style="font-size:11.5px;color:var(--text-sub);opacity:0.75;font-weight:400;">· ${m.uz}</span>`;
+      } else if (currentAppLang === 'en') {
+        transHtml = `<span style="font-weight:700;color:var(--text-main);">${m.uz}</span> <span style="font-weight:700;color:var(--text-main);">· ${m.ru}</span>`;
+      } else {
+        transHtml = `<span style="font-weight:700;color:var(--text-main);">${m.uz}</span> <span style="font-size:11.5px;color:var(--text-sub);opacity:0.75;font-weight:400;">· ${m.ru}</span>`;
+      }
+    }
+
+    card.innerHTML = `
+      <div class="res-info">
+        <div class="res-word">${r.word}</div>
+        <div class="res-trans">${transHtml}</div>
+      </div>
+      <div class="res-badge">${m.level}</div>
+    `;
+    card.onclick = () => {
+      addRecentSearch(r.id, r.word);
+      wdOpenedFrom = 'search';
+      wdHistoryStack = [];
+      openWordDetail(r.id);
+    };
+    box.appendChild(card);
+  });
+}
+
+function clearSearchText() {
+  const inp = document.getElementById('searchInput');
+  inp.value = '';
+  inp.focus();
+  onSearchType();
+}
+
+function exitSearchFocus() {
+  const inp = document.getElementById('searchInput');
+  inp.blur();
+  const exitBtn = document.getElementById('searchExitBtn');
+  if (exitBtn) exitBtn.style.display = 'none';
+}
+
+function _syncKeyboardLayout() {
+  const wrap = document.getElementById('searchBarWrap');
+  const vv = window.visualViewport;
+  if (!wrap || !vv || window.innerWidth > 768) return;
+
+  if (window.scrollY !== 0) window.scrollTo(0, 0);
+
+  const keyboardHeight = Math.max(0, window.innerHeight - (vv.height + vv.offsetTop));
+
+  if (keyboardHeight > 50) {
+    const offset = keyboardHeight - 96 + 12;
+    wrap.style.transform = `translate3d(-50%, -${Math.max(10, offset)}px, 0)`;
+  } else {
+    wrap.style.transform = `translate3d(-50%, 0, 0)`;
+  }
+}
+
+function onSearchFocus() {
+  const exitBtn = document.getElementById('searchExitBtn');
+  if (exitBtn) exitBtn.style.display = 'flex';
+
+  if (window.innerWidth <= 768) {
+    document.body.classList.add('search-kb-open');
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', _syncKeyboardLayout);
+      window.visualViewport.addEventListener('scroll', _syncKeyboardLayout);
+      setTimeout(_syncKeyboardLayout, 50);
+      setTimeout(_syncKeyboardLayout, 250);
+    }
+  }
+}
+
+function onSearchBlur() {
+  setTimeout(() => {
+    const inp = document.getElementById('searchInput');
+    if (document.activeElement === inp) return;
+
+    const exitBtn = document.getElementById('searchExitBtn');
+    if (exitBtn) exitBtn.style.display = 'none';
+
+    document.body.classList.remove('search-kb-open');
+
+    const wrap = document.getElementById('searchBarWrap');
+    if (wrap) {
+      wrap.style.transform = `translate3d(-50%, 0, 0)`;
+    }
+
+    if (window.visualViewport) {
+      window.visualViewport.removeEventListener('resize', _syncKeyboardLayout);
+      window.visualViewport.removeEventListener('scroll', _syncKeyboardLayout);
+    }
+    if (window.scrollY !== 0) window.scrollTo(0, 0);
+  }, 120);
+}
+
+function openWordDetail(wordId) {
+  const item = LOCAL_WORDS_DB.find(w => w.id === wordId);
+  if (!item) return;
+
+  currentWordDetailId = wordId;
+  document.getElementById('wdWord').textContent = item.word;
+  document.getElementById('wdPos').textContent = item.pos ? `/${item.pos}/` : '';
+
+  const container = document.getElementById('wdMeaningsContainer');
+  container.innerHTML = '';
+
+  const isRuBold = currentAppLang === 'ru';
+  const isEnBoth = currentAppLang === 'en';
+
+  let uzStyle = "font-size:15px; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:8px;";
+  let ruStyle = "font-size:14px; font-weight:500; color:var(--text-sub); display:flex; align-items:center; gap:8px;";
+
+  if (isRuBold) {
+    ruStyle = "font-size:15px; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:8px;";
+    uzStyle = "font-size:14px; font-weight:500; color:var(--text-sub); display:flex; align-items:center; gap:8px;";
+  } else if (isEnBoth) {
+    uzStyle = "font-size:15px; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:8px;";
+    ruStyle = "font-size:15px; font-weight:700; color:var(--text-main); display:flex; align-items:center; gap:8px;";
+  }
+
+  item.meanings.forEach((m, idx) => {
+    const isSaved = savedMeaningIds.includes(m.m_id);
+    const mCard = document.createElement('div');
+    mCard.className = 'meaning-card';
+
+    let patternsHtml = '';
+    if (m.patterns && m.patterns.length) {
+      patternsHtml = m.patterns.map((p, pIdx) => `
+        <div class="pattern-sub-item">
+          <div class="pattern-sub-title">${pIdx + 1}) ${t('pattern_label')}</div>
+          <div class="pattern-box-code">${p.formula}</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-sub);margin-top:2px;">${t('example_label')}</div>
+          ${p.examples.map(ex => `<div class="example-item">“${ex}”</div>`).join('')}
+        </div>
+      `).join('');
+    }
+
+    mCard.innerHTML = `
+      <div class="meaning-header">
+        <div class="meaning-meta">
+          <span class="meaning-num">${idx + 1}</span>
+          <span class="meaning-lvl">${m.level}</span>
+        </div>
+        <button class="meaning-bm-btn ${isSaved ? 'active' : ''}" onclick="toggleSaveMeaning('${m.m_id}', this)" title="Ma'noni saqlash">
+          <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+        </button>
+      </div>
+      <div class="trans-row">
+        <div style="${uzStyle}"><span class="lang-tag">UZ</span><span>${m.uz}</span></div>
+        <div style="${ruStyle}"><span class="lang-tag">RU</span><span>${m.ru}</span></div>
+      </div>
+      
+      <button class="toggle-details-btn" onclick="toggleMeaningDetails(this)">
+        <span>${t('more_details')}</span>
+      </button>
+
+      <div class="meaning-collapsible">
+        ${patternsHtml}
+      </div>
+    `;
+    container.appendChild(mCard);
+  });
+
+  if (item.synonyms && item.synonyms.length) {
+    const synCard = document.createElement('div');
+    synCard.className = 'meaning-card';
+    synCard.innerHTML = `<div style="font-size:13px;font-weight:700;color:var(--text-sub);margin-bottom:4px;">${t('synonyms')}</div>`;
+    
+    const synWrap = document.createElement('div');
+    synWrap.className = 'meaning-syn-wrap';
+    synWrap.style.marginLeft = '0';
+    
+    item.synonyms.forEach(s => {
+      const chip = document.createElement('div');
+      chip.className = 'syn-chip';
+      chip.textContent = '≈ ' + s.word;
+      chip.onclick = () => {
+        wdHistoryStack.push(currentWordDetailId);
+        openWordDetail(s.id);
+      };
+      synWrap.appendChild(chip);
+    });
+    
+    synCard.appendChild(synWrap);
+    container.appendChild(synCard);
+  }
+
+  go('word-detail');
+}
+
+function toggleMeaningDetails(btn) {
+  const card = btn.closest('.meaning-card');
+  const collapsible = card.querySelector('.meaning-collapsible');
+  const span = btn.querySelector('span');
+
+  if (collapsible.classList.contains('open')) {
+    collapsible.classList.remove('open');
+    span.textContent = t('more_details');
+  } else {
+    collapsible.classList.add('open');
+    span.textContent = t('hide_details');
+  }
+}
+
+function handleWordDetailBack() {
+  if (wdHistoryStack.length > 0) {
+    const prev = wdHistoryStack.pop();
+    openWordDetail(prev);
+  } else {
+    go(wdOpenedFrom === 'saved' ? 'saved-words-list' : 'search');
+  }
+}
+
+function toggleSaveMeaning(m_id, btn) {
+  const idx = savedMeaningIds.indexOf(m_id);
+  if (idx > -1) {
+    savedMeaningIds.splice(idx, 1);
+    btn.classList.remove('active');
+  } else {
+    savedMeaningIds.push(m_id);
+    btn.classList.add('active');
+  }
+  localStorage.setItem('uw_saved_meaning_ids', JSON.stringify(savedMeaningIds));
+  refreshSavedWordsCount();
+}
+
+function refreshSavedWordsCount() {
+  const desc = document.getElementById('savedCountDesc');
+  if (desc) {
+    desc.textContent = savedMeaningIds.length > 0 ? `${savedMeaningIds.length} ta ma'no saqlangan` : t('saved_desc');
+  }
+}
+
+function openSavedWordsList() {
+  wdOpenedFrom = 'saved';
+  const box = document.getElementById('savedWordsListBox');
+  box.innerHTML = '';
+  go('saved-words-list');
+
+  if (!savedMeaningIds.length) {
+    box.innerHTML = `<div class="results-empty">${t('saved_empty')}</div>`;
+    return;
+  }
+
+  savedMeaningIds.forEach(m_id => {
+    for (let wordObj of LOCAL_WORDS_DB) {
+      const meaning = wordObj.meanings.find(m => m.m_id === m_id);
+      if (meaning) {
+        const card = document.createElement('div');
+        card.className = 'res-card';
+        let transText = '';
+        if (currentAppLang === 'ru') {
+          transText = `<span style="font-weight:700;color:var(--text-main);">${meaning.ru}</span> <span style="font-size:11.5px;color:var(--text-sub);opacity:0.75;font-weight:400;">· ${meaning.uz}</span>`;
+        } else if (currentAppLang === 'en') {
+          transText = `<span style="font-weight:700;color:var(--text-main);">${meaning.uz}</span> <span style="font-weight:700;color:var(--text-main);">· ${meaning.ru}</span>`;
+        } else {
+          transText = `<span style="font-weight:700;color:var(--text-main);">${meaning.uz}</span> <span style="font-size:11.5px;color:var(--text-sub);opacity:0.75;font-weight:400;">· ${meaning.ru}</span>`;
+        }
+        card.innerHTML = `
+          <div class="res-info">
+            <div class="res-word">${wordObj.word}</div>
+            <div class="res-trans">${transText}</div>
+          </div>
+          <div class="res-badge">${meaning.level}</div>
+        `;
+        card.onclick = () => {
+          wdOpenedFrom = 'saved';
+          wdHistoryStack = [];
+          openWordDetail(wordObj.id);
+        };
+        box.appendChild(card);
+        break;
+      }
+    }
+  });
+}
+
+function playWordVoice() {
+  const word = document.getElementById('wdWord').textContent;
+  if (!word || !('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(word);
+  utter.lang = 'en-US';
+  utter.rate = 0.85;
+  window.speechSynthesis.speak(utter);
+}
+
+const SVG_COPY_ICON = `<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+const SVG_CHECK_ICON = `<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
+function copyCurrentWord(btn) {
+  const word = document.getElementById('wdWord').textContent;
+  if (!word) return;
+  const finish = () => {
+    btn.innerHTML = SVG_CHECK_ICON;
+    btn.classList.add('done');
+    setTimeout(() => {
+      btn.innerHTML = SVG_COPY_ICON;
+      btn.classList.remove('done');
+    }, 1500);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(word).then(finish).catch(finish);
+  } else {
+    finish();
+  }
+}
+
+function addRecentSearch(id, word) {
+  let list = JSON.parse(localStorage.getItem('uw_recents') || '[]').filter(x => x.id !== id);
+  list.unshift({id, word});
+  if (list.length > 8) list = list.slice(0, 8);
+  localStorage.setItem('uw_recents', JSON.stringify(list));
+  renderRecentSearchChips();
+}
+
+function clearAllRecentSearches() {
+  localStorage.removeItem('uw_recents');
+  renderRecentSearchChips();
+}
+
+function renderRecentSearchChips() {
+  const wrap = document.getElementById('recentSearchChips');
+  if (!wrap) return;
+  const list = JSON.parse(localStorage.getItem('uw_recents') || '[]');
+  wrap.innerHTML = '';
+  if (!list.length) {
+    wrap.innerHTML = `<span style="font-size:12px;color:var(--text-sub);padding:4px;">${t('history_empty')}</span>`;
+    return;
+  }
+  list.forEach(item => {
+    const chip = document.createElement('div');
+    chip.className = 'rs-chip';
+    chip.innerHTML = `<span>${item.word}</span><span class="rs-del">×</span>`;
+    chip.querySelector('span').onclick = () => {
+      document.getElementById('searchInput').value = item.word;
+      onSearchType();
+    };
+    chip.querySelector('.rs-del').onclick = (e) => {
+      e.stopPropagation();
+      let updated = JSON.parse(localStorage.getItem('uw_recents') || '[]').filter(x => x.id !== item.id);
+      localStorage.setItem('uw_recents', JSON.stringify(updated));
+      renderRecentSearchChips();
+    };
+    wrap.appendChild(chip);
+  });
+}
+
+(function initNav() {
+  const bar = document.getElementById('liquidNavBar');
+  const pill = document.getElementById('liquidNavPill');
+  const activeBtn = bar.querySelector('.liquid-nav-btn.active');
+
+  function updatePill() {
+    if (!activeBtn) return;
+    const barRect = bar.getBoundingClientRect();
+    const btnRect = activeBtn.getBoundingClientRect();
+    const x = btnRect.left - barRect.left + 4;
+    const w = btnRect.width - 8;
+    pill.style.transform = `translate3d(${x}px, 0, 0)`;
+    pill.style.width = `${w}px`;
+    pill.style.opacity = '1';
+  }
+
+  window.addEventListener('resize', updatePill);
+  setTimeout(updatePill, 100);
+})();
+
+const themeSwitch = document.getElementById('theme-switch');
+
+function applyTheme(isDark) {
+  if (isDark) {
+    document.body.classList.add('dark-theme');
+    themeSwitch.checked = false;
+  } else {
+    document.body.classList.remove('dark-theme');
+    themeSwitch.checked = true;
+  }
+  localStorage.setItem('uw_theme', isDark ? 'dark' : 'light');
+}
+
+const savedTheme = localStorage.getItem('uw_theme') || 'dark';
+applyTheme(savedTheme === 'dark');
+
+themeSwitch.addEventListener('change', (e) => {
+  applyTheme(!e.target.checked);
+});
+
+const langBtn = document.getElementById('langBtn');
+const langMenu = document.getElementById('langMenu');
+langBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  langMenu.classList.toggle('active');
+});
+document.addEventListener('click', () => langMenu.classList.remove('active'));
+
+document.querySelectorAll('#langMenu .menu-item').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('#langMenu .menu-item').forEach(el => el.classList.remove('selected'));
+    item.classList.add('selected');
+    const code = item.dataset.code;
+    document.getElementById('btnLabel').textContent = code;
+    langMenu.classList.remove('active');
+    applyGlobalLanguage(code.toLowerCase());
+  });
+});
+
+renderRecentSearchChips();
+go('search');
+</script>
+</body>
+</html>
